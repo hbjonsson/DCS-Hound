@@ -2,13 +2,13 @@ env.info("Starting to load Hound ELINT...")
 
 do
     if STTS ~= nil then
-        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone"
+        STTS.DIRECTORY = "C:\\Utils\\DCS-SimpleRadio-Standalone"
     end
 end
 
 do
     HOUND = {
-        VERSION = "0.2.0",
+        VERSION = "0.2.0 - 132nd VW",
         DEBUG = false,
         ELLIPSE_PERCENTILE = 0.6,
         NUM_DATAPOINTS = 15,
@@ -1505,18 +1505,18 @@ do
     end
 
     function HoundUtils.TTS.getVerbalConfidenceLevel(confidenceRadius)
-        if confidenceRadius == 0.1 then return "Precise" end
+        if confidenceRadius == 0.1 then return "Targetable" end
 
         local score={
-            "Very High", -- 500
+            "Targetable", -- 500
             "High", -- 1000
-            "Medium", -- 1500
+            "Low", -- 1500
             "Low", -- 2000
             "Low", -- 2500
-            "Very Low", -- 3000
-            "Very Low", -- 3500
-            "Very Low", -- 4000
-            "Very Low", -- 4500
+            "Low", -- 3000
+            "Low", -- 3500
+            "Low", -- 4000
+            "Low", -- 4500
             "Unactionable", -- 5000
         }
         return score[l_math.min(#score,l_math.max(1,l_math.floor(confidenceRadius/500)+1))]
@@ -4385,7 +4385,8 @@ do
             contactPrimarySector = nil
         end
 
-        local announce = "Attention All Aircraft! This is " .. self.callsign .. ". New threat detected! "
+	-- local announce = "Attention All Aircraft! This is " .. self.callsign .. ". New threat detected! "
+        local announce = "Attention All Players! This is " .. self.callsign .. ". "
         local enrolledGid = self:getSubscribedGroups()
 
         local msg = {coalition = self._hSettings:getCoalition(), priority = 2 , gid=enrolledGid}
@@ -4452,7 +4453,7 @@ do
         end
         header = header .. reportId .. " " ..
                                     HoundUtils.TTS.getTtsTime() .. ". "
-        local footer = "you have " .. reportId .. "."
+        local footer = "Lowdown " .. reportId .. "."
 
         local msgObj = {
             coalition = self._hSettings:getCoalition(),
@@ -5361,3 +5362,4 @@ do
     env.info("[Hound] - finished loading (".. HOUND.VERSION..")")
 end
 -- Hound version 0.2.0 - Compiled on 2021-12-04 20:27
+-- Modified for 132nd VW by Jester on 2021-12-11 11:42
