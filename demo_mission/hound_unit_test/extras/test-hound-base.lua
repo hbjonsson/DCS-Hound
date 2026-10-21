@@ -135,7 +135,7 @@ do
         -- Some whitebox shananigans
         -- force ATIS refresh
         self.houndBlue.sectors.default.comms.atis:runCallback()
-        lu.assertEquals(self.houndBlue.sectors.default.comms.atis.loop.msg.tts,"HOUND SAM information Alpha 08 hundred Local. No threats had been detected you have Alpha.")
+        lu.assertEquals(self.houndBlue.sectors.default.comms.atis.loop.msg.tts,"HOUND SAM information Alpha 08 hundred Local. No threats had been detected Lowdown Alpha.")
 
         -- change ATIS to NATO and force refresh
         lu.assertIsFalse(self.houndBlue:getNATO())

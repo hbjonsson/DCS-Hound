@@ -12,7 +12,7 @@ end
 
 do
     HOUND = {
-        VERSION = "0.5.2",
+        VERSION = "0.5.2-455",
         DEBUG = false,
         ELLIPSE_PERCENTILE = 0.6,
         DATAPOINTS_NUM = 30,
@@ -6047,18 +6047,18 @@ do
     end
 
     function HOUND.Utils.TTS.getVerbalConfidenceLevel(confidenceRadius)
-        if confidenceRadius == 0.1 then return "Precise" end
+        if confidenceRadius == 0.1 then return "Targetable" end
 
         local score={
-            "Very High", -- 500
+            "Targetable", -- 500
             "High", -- 1000
-            "Medium", -- 1500
+            "Low", -- 1500
             "Low", -- 2000
             "Low", -- 2500
-            "Very Low", -- 3000
-            "Very Low", -- 3500
-            "Very Low", -- 4000
-            "Very Low", -- 4500
+            "Low", -- 3000
+            "Low", -- 3500
+            "Low", -- 4000
+            "Low", -- 4500
             "Unactionable", -- 5000
         }
         return score[l_math.min(#score,l_math.max(1,l_math.floor(confidenceRadius/500)+1))]
@@ -10114,9 +10114,9 @@ do
     function HOUND.Sector:getTransmissionAnnounce(index)
         local messages = {
             "All Stations, " .. self.callsign .. ", ",
-            "All Aircraft, " .. self.callsign .. ", ",
+            "All Players, " .. self.callsign .. ", ",
             "All Stations, this is " .. self.callsign .. ", ",
-            "All Aircraft, this is " .. self.callsign .. ", ",
+            "All Players, this is " .. self.callsign .. ", ",
         }
         local retIndex = l_math.random(1,#messages)
         if type(index) == "number" then
@@ -10369,7 +10369,7 @@ function HOUND.Sector:notifySiteLaunching(site)
             footer = "Lowdown " .. footer
         else
             header = header .. " SAM information "
-            footer = "you have " .. footer
+            footer = "Lowdown " .. footer
         end
         header = header .. reportId .. " " ..
                                     HoundUtils.TTS.getTtsTime() .. ". "
@@ -11998,4 +11998,4 @@ do
     trigger.action.outText("Hound ELINT ("..HOUND.VERSION..") is loaded.", 15)
     env.info("[Hound] - finished loading (".. HOUND.VERSION..")")
 end
--- Hound version 0.5.2 - Compiled on 2026-08-09 20:24
+-- Hound version 0.5.2-455 - Compiled on 2026-10-21 20:29

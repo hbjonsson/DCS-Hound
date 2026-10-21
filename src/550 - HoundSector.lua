@@ -787,9 +787,9 @@ do
     function HOUND.Sector:getTransmissionAnnounce(index)
         local messages = {
             "All Stations, " .. self.callsign .. ", ",
-            "All Aircraft, " .. self.callsign .. ", ",
+            "All Players, " .. self.callsign .. ", ",
             "All Stations, this is " .. self.callsign .. ", ",
-            "All Aircraft, this is " .. self.callsign .. ", ",
+            "All Players, this is " .. self.callsign .. ", ",
         }
         local retIndex = l_math.random(1,#messages)
         if type(index) == "number" then
@@ -1058,12 +1058,13 @@ function HOUND.Sector:notifySiteLaunching(site)
         local header = self.callsign
         local footer = reportId .. "."
 
+        -- 455: always close ATIS with "Lowdown <id>" (avoids weather-ATIS "you have")
         if self._hSettings:getNATO() then
             header = header .. " Lowdown "
             footer = "Lowdown " .. footer
         else
             header = header .. " SAM information "
-            footer = "you have " .. footer
+            footer = "Lowdown " .. footer
         end
         header = header .. reportId .. " " ..
                                     HoundUtils.TTS.getTtsTime() .. ". "

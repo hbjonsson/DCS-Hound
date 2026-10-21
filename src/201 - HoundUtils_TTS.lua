@@ -213,19 +213,20 @@ do
     -- @param confidenceRadius meters
     -- @return (string) Description of accuracy e.g "Very High","High","Low"...
 
+    -- 455 / MCM F2T2EA: accuracy callouts aligned to TLE categories
     function HOUND.Utils.TTS.getVerbalConfidenceLevel(confidenceRadius)
-        if confidenceRadius == 0.1 then return "Precise" end
+        if confidenceRadius == 0.1 then return "Targetable" end
 
         local score={
-            "Very High", -- 500
+            "Targetable", -- 500
             "High", -- 1000
-            "Medium", -- 1500
+            "Low", -- 1500
             "Low", -- 2000
             "Low", -- 2500
-            "Very Low", -- 3000
-            "Very Low", -- 3500
-            "Very Low", -- 4000
-            "Very Low", -- 4500
+            "Low", -- 3000
+            "Low", -- 3500
+            "Low", -- 4000
+            "Low", -- 4500
             "Unactionable", -- 5000
         }
         return score[l_math.min(#score,l_math.max(1,l_math.floor(confidenceRadius/500)+1))]

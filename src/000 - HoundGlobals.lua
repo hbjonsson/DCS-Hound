@@ -42,7 +42,7 @@ do
     -- @field KALMAN_DEBUG If true, will print kalman filter debug info (currently not implemented, default is false)
     -- @field AUTO_ADD_PLATFORM_BY_PAYLOAD If true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
     HOUND = {
-        VERSION = "0.5.2-TRUNK",
+        VERSION = "0.5.2-455",
         DEBUG = true,
         ELLIPSE_PERCENTILE = 0.6,
         DATAPOINTS_NUM = 30,

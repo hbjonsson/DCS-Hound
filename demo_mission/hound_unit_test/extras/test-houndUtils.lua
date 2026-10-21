@@ -752,16 +752,16 @@ do
     end
 
     function TestHoundUtils:TestGetVerbalConfidenceLevel()
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(0.1),"Precise")
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(150),"Very High")
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(499),"Very High")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(0.1),"Targetable")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(150),"Targetable")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(499),"Targetable")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(500),"High")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(501),"High")
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(1000),"Medium")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(1000),"Low")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(1900),"Low")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(2200),"Low")
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(2600),"Very Low")
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(3050),"Very Low")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(2600),"Low")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(3050),"Low")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(4600),"Unactionable")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(5300),"Unactionable")
     end
@@ -968,7 +968,7 @@ do
     end
 
     function TestHoundUtils:TestTTSGetVerbalConfidenceEdge()
-        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(0),"Very High")
+        lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(0),"Targetable")
         lu.assertEquals(HOUND.Utils.TTS.getVerbalConfidenceLevel(5010),"Unactionable")
     end
 
