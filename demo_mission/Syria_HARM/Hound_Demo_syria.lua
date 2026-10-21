@@ -1,98 +1,72 @@
 do
     if STTS ~= nil then
-        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone"
+        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone\\ExternalAudio"
     end
 
-    -- SA-6 activation logic
 
-    SA6 = {}
-    SA6.North = nil
-    SA6.South = nil
-    SA6.template = "SYR_SA6"
-    SA6.spawnJoker = function() return (math.random() < 0.4) end
-    function SA6.destroy(GroupName)
-        env.info("check " .. GroupName)
+--------------------------- HOUND EventHandler SETUP ---------------------------
+-- starting with events because I want to catch the Hound enable event normally, this will be done later
 
-        local SAM = Group.getByName(GroupName)
-        local destroy = true
-        for index, data in pairs(SAM:getUnits()) do
-            if setContainsValue({"Kub 1S91 str","SA-11 Buk SR 9S18M1","Osa 9A33 ln"},Unit.getTypeName(data)) and (Unit.getLife(data) > 1 or Unit.isExist(data) or (Unit.getLife(data)/Unit.getLife0(data)) > 0.55) then
-                destroy = false
-            end 
+    HoundTriggers = {}
+    function HoundTriggers.dumpCsv(interval)
+        HoundBlue:dumpIntelBrief()
+        if interval then
+            return timer.getTime() + interval
         end
-        if destroy then
-            SAM:destroy()
-        end
-        env.info(GroupName .. " destroy " .. tostring(destroy))
-
-        return destroy
     end
+    -- HoundTriggers.taskId = timer.scheduleFunction( HoundTriggers.dumpCsv, 300, timer.getTime() + 30 )
+    HoundTriggers.taskId = nil
 
-    function SA6.activate(SAM)
-        SAM:enableEmission(false)
-        local control = SAM:getController()
-        control:setOnOff(true)
-        control:setOption(0,2) -- ROE, Open_file
-        control:setOption(9,2) -- Alarm_State, RED
-        control:setOption(20,false) -- ENGAGE_AIR_WEAPONS, false
-        SAM:activate()
-        SAM:enableEmission(true)
-    end
-
-    function SA6.GoLive()
-        env.info("GoLive")
-        if SA6.North == nil or SA6.destroy(SA6.North:getName()) then
-            SA6.North = Unit.getByName(mist.cloneInZone(SA6.template,"SA6_North")["units"][1]["name"]):getGroup()
-            SA6.activate(SA6.North)
-        end
-
-        if SA6.South == nil or SA6.destroy(SA6.South:getName()) then
-            -- SA6.South = mist.cloneInZone(SA6.template,"SA6_South")
-            SA6.South = Unit.getByName(mist.cloneInZone(SA6.template,"SA6_South")["units"][1]["name"]):getGroup()
-            SA6.activate(SA6.South)
-        end
-
-        if SA6.spawnJoker and (SA6.Joker == nil or SA6.destroy(SA6.Joker:netName())) then
-            SA6.Joker = Unit.getByName(mist.cloneInZone(SA6.randomTemplate(),"Joker_SAM")["units"][1]["name"]):getGroup()
-            SA6.activate(SA6.Joker)
+    function HoundTriggers:onHoundEvent(event)
+        if event.coalition == coalition.side.BLUE then
+            if event.id == HOUND.EVENTS.RADAR_DESTROYED then
+                local contact = event.initiator
+                local SAM = Group.getByName(contact:getDcsGroupName())
+                if SAM and SAM:getSize() > 0 and
+                    HOUND.setContainsValue({HOUND_MISSION.SA6.North,HOUND_MISSION.SA6.South,HOUND_MISSION.SA6.Joker},SAM)
+                    then
+                        timer.scheduleFunction(HOUND_MISSION.SA6.cleanup, SAM, timer.getTime() + math.random(30,60))
+                end
+            end
+            -- if event.id == HOUND.EVENTS.HOUND_ENABLED then
+            --     HoundTriggers.taskId = timer.scheduleFunction( HoundTriggers.dumpCsv, 300, timer.getTime() + 30 )
+            -- end
+            -- if event.id == HOUND.EVENTS.HOUND_DISABLED then
+            --     if HoundTriggers.taskId then
+            --         timer.removeFunction(HoundTriggers.taskId)
+            --     end
+            -- end
         end
     end
 
-    function SA6.randomTemplate()
-        local templates = {"SYR_SA6","SYR_SA11","SYR_SA8"}
-        return templates[math.random(1,#templates)]
-    end
-
-    -- RestartMission = function()
-    --     local filename = DCS.getMissionFilename()
-    --     net.load_mission(filename)
-    -- end
-
-    MAIN_MENU = {
-        root = missionCommands.addSubMenuForCoalition(coalition.side.BLUE,"Mission Actions")
-    }
-    MAIN_MENU.activateSa6 = missionCommands.addCommandForCoalition(coalition.side.BLUE,"Activate SA-6",MAIN_MENU.root,SA6.GoLive)
-    -- MAIN_MENU.activateSa6 = missionCommands.addCommandForCoalition(coalition.side.BLUE,"Restart Mission",MAIN_MENU.root,RestartMission)
-
-    -- activate SA6 and keep trigerring it
-    mist.scheduleFunction(SA6.GoLive,nil,timer.getTime()+120,600)
+    HOUND.addEventHandler(HoundTriggers)
 
 
+--------------------------- HOUND SETUP ---------------------------
 
     HoundBlue = HoundElint:create(coalition.side.BLUE)
-    HoundBlue:addPlatform("ELINT North") -- C-130
-    HoundBlue:addPlatform("ELINT South") -- C-130
-    HoundBlue:addPlatform("ELINT Galil") -- C-130
-    HoundBlue:addPlatform("ELINT HERMON") -- Ground Station
-    HoundBlue:addPlatform("ELINT MERON") -- Ground Station
+
+    -- HoundBlue:addPlatform("ELINT North") -- C-130
+    -- HoundBlue:addPlatform("ELINT South") -- C-130
+    -- HoundBlue:addPlatform("ELINT Galil") -- C-130
+    for elintUnitName,_ in pairs(HOUND.Utils.Filter.unitsByPrefix("ELINT ")) do
+        HoundBlue:addPlatform(elintUnitName)
+    end
+
+    -- HoundBlue:addPlatform("ELINT HERMON") -- Ground Station
+    -- HoundBlue:addPlatform("ELINT MERON") -- Ground Station
+    for elintObjectName,_ in pairs(HOUND.Utils.Filter.staticObjectsByPrefix("ELINT ")) do
+        HoundBlue:addPlatform(elintObjectName)
+    end
 
     HoundBlue:addSector("Lebanon")
+    HoundBlue:addSector("Northern Israel")
     -- HoundBlue:addSector("North Syria")
     -- HoundBlue:addSector("South Syria")
 
     local controller_args = {
-        freq = "251.000,122.000,35.000",
-        modulation = "AM,AM,FM",
+        freq = "251.000,122.000,35.000,3.500",
+        modulation = "AM,AM,FM,AM",
         gender = "male"
     }
     local atis_args = {
@@ -107,37 +81,48 @@ do
     HoundBlue:enableText("all")
 
     HoundBlue:setZone("Lebanon","Sector_Lebanon")
+    HoundBlue:setZone("Northern Israel","Sector_Israel")
 
-    HoundBlue:preBriefedContact('SYR_SA-2')
-
-    HoundBlue:setMarkerType(HOUND.MARKER.POLYGON)
+    -- HoundBlue:setMarkerType(HOUND.MARKER.POLYGON)
     HoundBlue:enableMarkers()
     HoundBlue:enableBDA()
-    HoundBlue:systemOn()
 
+    HoundBlue:preBriefedContact('SYR_SA-2')
+    HoundBlue:setAlertOnLaunch(true)
 
-    humanElint = {}
-    function humanElint:onEvent(DcsEvent)
-        if DcsEvent.id == world.event.S_EVENT_BIRTH then
-            if HoundBlue and DcsEvent.initiator and DcsEvent.initiator:getCoalition() == HoundBlue:getCoalition()
-            and DcsEvent.initiator:getTypeName() == "AJS37" and DcsEvent.initiator:getPlayerName()
-            then
-                env.info("Adding Human Viggen " .. DcsEvent.initiator:getPlayerName())
-                HoundBlue:addPlatform(DcsEvent.initiator:getName())
-
-                -- Remove the C-130s
-                HoundBlue:removePlatform("ELINT North") -- C-130
-                HoundBlue:removePlatform("ELINT South") -- C-130
-            end
-        end
-        if DcsEvent.id == world.event.S_EVENT_PLAYER_LEAVE_UNIT then
-            if HoundBlue and DcsEvent.initiator and DcsEvent.initiator:getCoalition() == HoundBlue:getCoalition()
-                and DcsEvent.initiator:getTypeName() == "AJS37" and setContainsValue(HoundBlue:listPlatforms(),DcsEvent.initiator:getName())
-            then
-                HoundBlue:removePlatform(DcsEvent.initiator:getName())
-            end
-        end
+    for ewrUnitName,_ in pairs(HOUND.Utils.Filter.unitsByPrefix("EWR-")) do
+        HoundBlue:preBriefedContact(ewrUnitName)
     end
 
-    world.addEventHandler(humanElint)
+    HoundBlue:setCallsignOverride({
+        Colt = '*',
+        Chaos = '*'
+    })
+    HoundBlue:systemOn()
+
+    -- humanElint = {}
+    -- function humanElint:onEvent(DcsEvent)
+    --     if DcsEvent.id == world.event.S_EVENT_BIRTH then
+    --         if HoundBlue and DcsEvent.initiator and DcsEvent.initiator:getCoalition() == HoundBlue:getCoalition()
+    --         and DcsEvent.initiator:getTypeName() == "AJS37" and DcsEvent.initiator:getPlayerName()
+    --         then
+    --             env.info("Adding Human Viggen " .. DcsEvent.initiator:getPlayerName())
+    --             HoundBlue:addPlatform(DcsEvent.initiator:getName())
+
+    --             -- Remove the C-130s
+    --             -- HoundBlue:removePlatform("ELINT North") -- C-130
+    --             -- HoundBlue:removePlatform("ELINT South") -- C-130
+    --             -- HoundBlue:removePlatform("ELINT Galil") -- C-130
+    --         end
+    --     end
+    --     if DcsEvent.id == world.event.S_EVENT_PLAYER_LEAVE_UNIT then
+    --         if HoundBlue and HOUND.Utils.Dcs.isUnit(DcsEvent.initiator) and DcsEvent.initiator:getCoalition() == HoundBlue:getCoalition()
+    --             and DcsEvent.initiator:getTypeName() == "AJS37" and HOUND.setContainsValue(HoundBlue:listPlatforms(),DcsEvent.initiator:getName())
+    --         then
+    --             HoundBlue:removePlatform(DcsEvent.initiator:getName())
+    --         end
+    --     end
+    -- end
+
+    -- world.addEventHandler(humanElint)
 end

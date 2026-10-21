@@ -1,110 +1,209 @@
 do
     if STTS ~= nil then
-        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone"
+        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone\\ExternalAudio"
     end
 end
 
 do
-    env.info("configuring Hound")    
+    local getVoice = function(provider)
+        local supertonicVoices = {
+            "F1",
+            "F2",
+            "F3",
+            "F4",
+            "F5",
+            "M1",
+            "M2",
+            "M3",
+            "M4",
+            "M5"
+        } 
+        if provider == "supertonic" then
+            return supertonicVoices[math.random(#supertonicVoices)]
+        end
+    end
+    env.info("configuring Hound")
+    HOUND.FORCE_MANAGE_MARKERS = true
     Elint_blue = HoundElint:create(coalition.side.BLUE)
     Elint_blue:addPlatform("Mt_Hermon_ELINT")
     Elint_blue:addPlatform("Mt_Meron_ELINT")
 
     Elint_blue:addPlatform("ELINT_C130_south")
     Elint_blue:addPlatform("ELINT_C130_north")
+    Elint_blue:addPlatform("ELINT_TURKEY")
+
 
     -- sectors
     Elint_blue:addSector("Damascus",10)
-    Elint_blue:addSector("South Syria")
-    Elint_blue:addSector("Homs")
-    Elint_blue:addSector("Latakya")
-
-    Elint_blue:addSector("Palmyra")
-    Elint_blue:addSector("Saykal")
-    Elint_blue:addSector("Haleb")
-    Elint_blue:addSector("Tabqua")
-
-    Elint_blue:addSector("Lebanon")
-
-    -- Assets
-    Elint_blue:enableNotifier("default",{freq = "251.000,35.000", modulation = "AM,FM", speed=1})
-    
-    Elint_blue:enableController("Damascus",{freq="306.000", modulation = "AM"})
-    Elint_blue:enableAtis("Damascus",{freq="306.250", modulation = "AM"})
-    Elint_blue:setCallsign("Damascus","OPTIMUS")
     Elint_blue:setZone("Damascus","Damascus")
 
-    Elint_blue:enableController("South Syria",{freq="306.500", modulation = "AM"})
-    Elint_blue:enableAtis("South Syria",{freq="306.750", modulation = "AM"})
-    Elint_blue:setCallsign("South Syria","JAZZ")
+    Elint_blue:addSector("South Syria")
     Elint_blue:setZone("South Syria","South Syria")
-
-    Elint_blue:enableController("Homs",{freq="307.000", modulation = "AM"})
-    Elint_blue:enableAtis("Homs",{freq="307.250", modulation = "AM"})
-    Elint_blue:setCallsign("Homs","BUMBLEBEE")
+    
+    Elint_blue:addSector("Homs")
     Elint_blue:setZone("Homs","Homs")
-
-    Elint_blue:enableController("Latakya",{freq="307.500", modulation = "AM"})
-    Elint_blue:enableAtis("Latakya",{freq="307.750", modulation = "AM"})
-    Elint_blue:setCallsign("Latakya","WHEELJACK")
+    
+    Elint_blue:addSector("Latakya")
     Elint_blue:setZone("Latakya","Latakya")
 
-    Elint_blue:enableController("Lebanon",{freq="308.000", modulation = "AM"})
-    Elint_blue:enableAtis("Lebanon",{freq="308.250", modulation = "AM"})
-    Elint_blue:setCallsign("Lebanon","GRIMLOK")
-    Elint_blue:setZone("Lebanon","Lebanon")
-
-    Elint_blue:enableController("Palmyra",{freq="308.500", modulation = "AM"})
-    Elint_blue:enableAtis("Palmyra",{freq="308.750", modulation = "AM"})
-    Elint_blue:setCallsign("Palmyra","SWOOP")
+    Elint_blue:addSector("Palmyra")
     Elint_blue:setZone("Palmyra","Palmyra")
-
-    Elint_blue:enableController("Saykal",{freq="309.000", modulation = "AM"})
-    Elint_blue:enableAtis("Saykal",{freq="309.250", modulation = "AM"})
-    Elint_blue:setCallsign("Saykal","RATCHET")
-    Elint_blue:setZone("Saykal","Saykal")
-
-    Elint_blue:enableController("Haleb",{freq="309.500", modulation = "AM"})
-    Elint_blue:enableAtis("Haleb",{freq="309.750", modulation = "AM"})
-    Elint_blue:setCallsign("Haleb","SLAG")
+    
+    Elint_blue:addSector("Sayqal")
+    Elint_blue:setZone("Sayqal","Sayqal")
+    
+    Elint_blue:addSector("Haleb")
     Elint_blue:setZone("Haleb","Haleb")
-
-    Elint_blue:enableController("Tabqa",{freq="310.000", modulation = "AM"})
-    Elint_blue:enableAtis("Tabqa",{freq="310.250", modulation = "AM"})
-    Elint_blue:setCallsign("Tabqa","IRONHIDE")
+    
+    Elint_blue:addSector("Tabqa")
     Elint_blue:setZone("Tabqa","Tabqa")
 
+    Elint_blue:addSector("Lebanon")
+    Elint_blue:setZone("Lebanon","Lebanon")
+
+    -- Meta-sectors
+    local metaSectors = {
+        ["South AO"] = { "Lebanon", "South Syria", "Damascus", "Sayqal" },
+        ["North AO"] = { "Latakya", "Homs", "Haleb" },
+        ["East AO"]  = { "Tabqa", "Palmyra", "Sayqal" },
+    }
+    for metaName, children in pairs(metaSectors) do
+        Elint_blue:addSector(metaName)
+        for _, child in ipairs(children) do
+            Elint_blue:addChildSector(metaName, child)
+        end
+    end
+    Elint_blue:setCallsign("South AO","OPTIMUS")
+    Elint_blue:setCallsign("North AO","JAZZ")
+    Elint_blue:setCallsign("East AO","BUMBLEBEE")
+    Elint_blue:enableController("South AO",{freq="306.000", modulation = "AM", provider="supertonic", voice = getVoice("supertonic"),speed = 1.05})
+    Elint_blue:enableController("North AO",{freq="306.500", modulation = "AM", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.05})
+    Elint_blue:enableController("East AO",{freq="307.000", modulation = "AM", provider="supertonic", voice = getVoice("supertonic"),speed = 1.05})
+
+    -- -- Assets
+    -- Elint_blue:enableNotifier("default",{freq = "251.000,35.000", modulation = "AM,FM", speed=1})
+    
+    -- Elint_blue:enableController("Damascus",{freq="306.000", modulation = "AM"})
+    Elint_blue:enableAtis("Damascus",{freq="306.250", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    -- Elint_blue:setCallsign("Damascus","OPTIMUS")
+    -- Elint_blue:setZone("Damascus","Damascus")
+
+    -- Elint_blue:enableController("South Syria",{freq="306.500", modulation = "AM"})
+    Elint_blue:enableAtis("South Syria",{freq="306.750", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    -- Elint_blue:setCallsign("South Syria","JAZZ")
+    -- Elint_blue:setZone("South Syria","South Syria")
+
+    -- Elint_blue:enableController("Homs",{freq="307.000", modulation = "AM"})
+    -- Elint_blue:setCallsign("Homs","BUMBLEBEE")
+    -- Elint_blue:setZone("Homs","Homs")
+
+    -- Elint_blue:enableController("Latakya",{freq="307.500", modulation = "AM"})
+    Elint_blue:enableAtis("Latakya",{freq="307.750", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    -- Elint_blue:setCallsign("Latakya","WHEELJACK")
+    -- Elint_blue:setZone("Latakya","Latakya")
+
+    -- Elint_blue:enableController("Lebanon",{freq="308.000", modulation = "AM"})
+    -- Elint_blue:setCallsign("Lebanon","GRIMLOK")
+    -- Elint_blue:setZone("Lebanon","Lebanon")
+
+    -- Elint_blue:enableController("Palmyra",{freq="308.500", modulation = "AM"})
+    -- Elint_blue:setCallsign("Palmyra","SWOOP")
+    -- Elint_blue:setZone("Palmyra","Palmyra")
+
+    -- Elint_blue:enableController("Sayqal",{freq="309.000", modulation = "AM"})
+    -- Elint_blue:setCallsign("Sayqal","RATCHET")
+    -- Elint_blue:setZone("Sayqal","Sayqal")
+
+    -- Elint_blue:enableController("Haleb",{freq="309.500", modulation = "AM"})
+    Elint_blue:enableAtis("Haleb",{freq="309.750", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    -- Elint_blue:setCallsign("Haleb","SLAG")
+    -- Elint_blue:setZone("Haleb","Haleb")
+
+    -- Elint_blue:enableController("Tabqa",{freq="310.000", modulation = "AM"})
+    -- Elint_blue:setCallsign("Tabqa","IRONHIDE")
+    -- Elint_blue:setZone("Tabqa","Tabqa")
+
+    Elint_blue:enableAtis("Homs",{freq="307.250", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    Elint_blue:enableAtis("Lebanon",{freq="308.250", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    Elint_blue:enableAtis("Palmyra",{freq="308.750", modulation = "AM", provider="piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    Elint_blue:enableAtis("Sayqal",{freq="309.250", modulation = "AM", provider = "piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    Elint_blue:enableAtis("Tabqa",{freq="310.250", modulation = "AM", provider = "piper", voice = "en_US-libritts-high", speaker=math.random(200),speed = 1.15})
+    
+    
     Elint_blue:enableText("all")
+    Elint_blue:enableAlerts("all")
 
     Elint_blue:setTransmitter("all","Mt_Meron_ELINT")
-    Elint_blue:systemOn()
 
-    -- faking Satellite intel, add all enemy IADS EW radars as prebriefed.
-    env.info("importing Skynet IADS EWRs")
-    for _,ewRadar in pairs(redIADS:getEarlyWarningRadars()) do
+    -- fake Satellite intel, add all EWRs as prebriefed contacts
+    env.info("importing EWRs as prebriefed contacts")
+    for ewRadarName,ewRadar in pairs(HOUND.Utils.Filter.unitsByPrefix('EWR')) do
 
-        local ewRadarName = nil
-        if type(ewRadar.getDCSName) == "function" then
-            ewRadarName = ewRadar:getDCSName()
-        end
-        if ewRadarName then
+        -- local ewRadarName = nil
+        -- if type(ewRadar.getDCSName) == "function" then
+        --     ewRadarName = ewRadar:getDCSName()
+        -- end
+        if ewRadar:isExist() then
             Elint_blue:preBriefedContact(ewRadarName)
         end
     end
+    Elint_blue:systemOn()
 
     env.info("Hound - End of config")
 end
 
 do
-    FakeEventHandler = {}
-    function FakeEventHandler:onHoundEvent(event)
+    HoundEventHandler = {}
+    function HoundEventHandler:onHoundEvent(event)
         if event.coalition == coalition.side.BLUE then
-            if event.id == HOUND.EVENTS.RADAR_DETECTED then
-                local contact = event.initiator
-                trigger.action.outTextForCoalition(event.coalition,"Let's pretend a SEAD flight was fragged to strike " .. contact:getName(),10)
+            if event.id == HOUND.EVENTS.SITE_CREATED then
+                local site = event.initiator
+                if site.isEWR then return end
+                local grp = site:getDcsObject()
+                if not grp then return end
+                -- select SEAD flight
+                local posCoord = COORDINATE:NewFromVec3(site:getPos())
+                local seadFlights = {'SEAD_NORTH','SEAD_WEST','SEAD_SOUTH'}
+                local coordCache = {}
+                for _, name in ipairs(seadFlights) do
+                    local seadGrp = GROUP:FindByName(name)
+                    if seadGrp then
+                        coordCache[name] = seadGrp:GetCoordinate()
+                    end
+                end
+                table.sort(seadFlights,
+                            function (f1,f2)
+                                local c1 = coordCache[f1]
+                                local c2 = coordCache[f2]
+                                if not c1 then return false end
+                                if not c2 then return true end
+                                return posCoord:Get2DDistance(c1) < posCoord:Get2DDistance(c2)
+                            end)
+                -- initilize mission
+                local siteMGroup = GROUP:FindByName(site:getDcsName())
+                local mission = AUFTRAG:NewSEAD(siteMGroup, 20000)
+                local sector = Elint_blue:getSector(site:getPrimarySector())
+                -- env.info(tostring(sector:hasController()))
+                local controllerFreq = nil
+                if sector:hasController() then
+                    controllerFreq = UTILS.Split(sector:getControllerFreq()[1]," ")
+                    if controllerFreq[2] == "FM" then controllerFreq[3] = 1 else controllerFreq[3] = 0 end
+                    mission:SetRadio(tonumber(controllerFreq[1]),controllerFreq[3])
+                end
+                local seadStrike = SPAWN:NewWithAlias(seadFlights[1],"SEAD ".. site:getName())
+                if controllerFreq then
+                    seadStrike:InitRadioFrequency(controllerFreq[1])
+                    seadStrike:InitRadioModulation(controllerFreq[2])
+                end
+                local SeadGroup = seadStrike:Spawn()
+                local fg=FLIGHTGROUP:New(SeadGroup)
+                fg:AddMission(mission)
+                trigger.action.outTextForCoalition(event.coalition,string.format("Fragging a SEAD flight (%s) to strike %s (%s)", SeadGroup:GetName(), site:getName(),site:getNatoDesignation()),10)
+
+
             end
         end
     end
 
-    HOUND.addEventHandler(FakeEventHandler)
+    HOUND.addEventHandler(HoundEventHandler)
 end

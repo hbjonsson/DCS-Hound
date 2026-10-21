@@ -1,82 +1,107 @@
---- HoundConfig
+--- HOUND.Config
 -- Hound config singleton
 -- @local
--- @module HoundConfig
+-- @module HOUND.Config
 do
 
-    -- @field HoundConfig
-    HoundConfig = {
+    -- @field HOUND.Config
+    HOUND.Config = {
         configMaps = {}
     }
 
-    HoundConfig.__index = HoundConfig
+    HOUND.Config.__index = HOUND.Config
 
     --- return config for specific Hound instance
     -- @param HoundInstanceId Hound instance ID
     -- @return config map for specific hound instace
-    -- @within HoundConfig
-    function HoundConfig.get(HoundInstanceId)
-        HoundInstanceId = HoundInstanceId or Length(HoundConfig.configMaps)+1
+    -- @within HOUND.Config
+    function HOUND.Config.get(HoundInstanceId)
+        HoundInstanceId = HoundInstanceId or HOUND.Length(HOUND.Config.configMaps)+1
 
-        if HoundConfig.configMaps[HoundInstanceId] then
-            return HoundConfig.configMaps[HoundInstanceId]
+        if HOUND.Config.configMaps[HoundInstanceId] then
+            return HOUND.Config.configMaps[HoundInstanceId]
         end
 
         local instance = {}
-        instance.mainInterval = 15
-        instance.processInterval = 60
-        instance.barkInterval = 120
+        instance.intervals = {
+            scan = 10,
+            process = 30,
+            menus = 60,
+            markers = 120,
+
+        }
         instance.preferences = {
             useMarkers = true,
-            markerType = HOUND.MARKER.DIAMOND,
+            markerType = HOUND.MARKER.CIRCLE,
+            markSites = true,
             hardcore = false,
             detectDeadRadars = true,
             NatoBrevity = false,
-            platformPosErr = 0,
+            platformPosErr = false,
             useNatoCallsigns = false,
-            AtisUpdateInterval = 300
+            AtisUpdateInterval = 180,
+            AlertOnLaunch = false,
+            AlertOnLaunchCooldown = 30
+
         }
         instance.coalitionId = nil
         instance.id = HoundInstanceId
         instance.callsigns = {}
+        instance.callsignOverride = {}
         instance.radioMenu = {
             root = nil,
-            parent = nil
+            parent = nil,
+            sectorPages = {},
+            sectorCount = 0
         }
+        instance.onScreenDebug = false
 
         --- get hound ID
-        -- @within HoundConfig.instance
-        -- @return Int Hound instance Id
+        -- @within HOUND.Config.instance
+        -- @return[type=int] Hound instance Id
         instance.getId = function (self)
             return self.id
         end
 
         --- get hound coalition ID
-        -- @within HoundConfig.instance
-        -- @return Int Hound instance coalition Id
+        -- @within HOUND.Config.instance
+        -- @return[type=int] Hound instance coalition Id
         instance.getCoalition = function(self)
             return self.coalitionId
         end
 
         --- set hound coalition ID
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @param coalitionId coalition enum
-        -- @return Bool True if coalition was changed
+        -- @return[type=Bool] True if coalition was changed
         instance.setCoalition = function(self,coalitionId)
             if self.coalitionId ~= nil then
                 env.info("[Hound] - coalition already set for Instance Id " .. self.id)
                 return false
             end
-            if setContainsValue(coalition.side,coalitionId) then
+            if HOUND.setContainsValue(coalition.side,coalitionId) then
                 self.coalitionId = coalitionId
                 return true
             end
             return false
         end
 
+        --- set intervals
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @param intervalName interval to update
+        -- @param setVal set value (in seconds)
+        instance.setInterval = function (self,intervalName,setVal)
+            if HOUND.setContains(self.intervals,intervalName) and type(setVal) == "number" then
+                self.intervals[intervalName] = setVal
+                return true
+            end
+            return false
+        end
+
         --- get marker type
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @return ENUM markerType
         -- @see HOUND.MARKER
@@ -85,13 +110,13 @@ do
         end
 
         --- set marker type
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @param markerType MarkerType enum
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         -- @see HOUND.MARKER
         instance.setMarkerType = function (self,markerType)
-            if setContainsValue(HOUND.MARKER,markerType) then
+            if HOUND.setContainsValue(HOUND.MARKER,markerType) then
                 self.preferences.markerType = markerType
                 return true
             end
@@ -99,18 +124,18 @@ do
         end
 
         --- use marker getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Bool True if markers to be used
+        -- @return[type=Bool] True if markers to be used
         instance.getUseMarkers = function (self)
             return self.preferences.useMarkers
         end
 
         --- use markers setter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @bool value set this value
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         instance.setUseMarkers = function(self,value)
             if type(value) == "boolean" then
                 self.preferences.useMarkers = value
@@ -118,20 +143,39 @@ do
             end
             return false
         end
+        --- Mark sites getter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return[type=Bool] True if sites should be marked
+        instance.getMarkSites = function (self)
+            return self.preferences.markSites
+        end
+        --- Mark sites setter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @bool value set this value
+        -- @return[type=Bool] True if change was made
+        instance.setMarkSites = function(self,value)
+            if type(value) == "boolean" then
+                self.preferences.markSites = value
+                return true
+            end
+            return false
+        end
 
         --- BDA getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Bool True if BDA will be done
+        -- @return[type=Bool] True if BDA will be done
         instance.getBDA = function(self)
             return self.preferences.detectDeadRadars
         end
 
         --- BDA setter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @bool value set this value
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         instance.setBDA = function(self,value)
             if type(value) == "boolean" then
                 self.preferences.detectDeadRadars = value
@@ -141,9 +185,9 @@ do
         end
 
         --- NATO getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Bool true if NATO brevity is used
+        -- @return[type=Bool] True if NATO brevity is used
         instance.getNATO = function(self)
             return self.preferences.NatoBrevity
         end
@@ -151,7 +195,7 @@ do
         --- NATO setter
         -- @param self config instance
         -- @bool value set this value
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         instance.setNATO = function(self,value)
             if type(value) == "boolean" then
                 self.preferences.NatoBrevity = value
@@ -161,9 +205,9 @@ do
         end
 
         --- NATO callsign getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Bool true if NATO callsignes will be used
+        -- @return[type=Bool] True if NATO callsignes will be used
         instance.getUseNATOCallsigns = function(self)
             return self.preferences.useNatoCallsigns
         end
@@ -171,7 +215,7 @@ do
         --- NATO callsign setter
         -- @param self config instance
         -- @bool value set this value
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         instance.setUseNATOCallsigns = function(self,value)
             if type(value) == "boolean" then
                 self.preferences.useNatoCallsigns = value
@@ -181,18 +225,18 @@ do
         end
 
         --- Atis Update Interval getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Int current AtisUpdateInterval
+        -- @return[type=int] current AtisUpdateInterval
         instance.getAtisUpdateInterval = function(self)
             return self.preferences.AtisUpdateInterval
         end
 
         --- Atis Update Interval setter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @int value set update interval in seconds
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         instance.setAtisUpdateInterval = function(self,value)
             if type(value) == "number" then
                 self.preferences.AtisUpdateInterval = value
@@ -202,20 +246,20 @@ do
         end
 
         --- Position error getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Int desired error in meters
+        -- @return[type=Bool] True if platform position error is used
         instance.getPosErr = function(self)
             return self.preferences.platformPosErr
         end
 
         --- Platform Position error setter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @int value set error radius in meters
-        -- @return Bool True if change was made
+        -- @bool value true if you want to use platform position error
+        -- @return[type=Bool] True if change was made
         instance.setPosErr = function(self,value)
-            if type(value) == "number" then
+            if type(value) == "boolean" then
                 self.preferences.platformPosErr = value
                 return true
             end
@@ -223,18 +267,18 @@ do
         end
 
         --- Platform Hardcore mode getter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
-        -- @return Bool true if enabled
+        -- @return[type=Bool] True if enabled
         instance.getHardcore = function(self)
             return self.preferences.hardcore
         end
 
         --- Platform Hardcore mode setter
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @bool value desired state
-        -- @return Bool True if change was made
+        -- @return[type=Bool] True if change was made
         instance.setHardcore = function(self,value)
             if type(value) == "boolean" then
                 self.preferences.hardcore = value
@@ -243,35 +287,155 @@ do
             return false
         end
 
+        --- On screen Debug Output getter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return[type=Bool] True if Debug output will be used
+        instance.getOnScreenDebug = function(self)
+            return self.onScreenDebug
+        end
+
+        --- On screen Debug output setter
+        -- @param self config instance
+        -- @bool value set this value
+        -- @return[type=Bool] True if change was made
+        instance.setOnScreenDebug = function(self,value)
+            if type(value) == "boolean" then
+                self.onScreenDebug = value
+                return true
+            end
+            return false
+        end
+
+        --- Callsign override table getter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return table of current callsign overrides
+        instance.getCallsignOverride = function(self)
+            return self.callsignOverride
+        end
+
+        --- Callsign override table setter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @param value table of callsign overrides
+        -- @return[type=Bool] True if change was made
+        instance.setCallsignOverride = function(self,value)
+            if type(value) == "table" then
+                self.callsignOverride = value
+                return true
+            end
+            return false
+        end
+
+        --- Alert on Launch setter
+        -- @param self config instance
+        -- @bool value set this value
+        -- @return[type=Bool] True if change was made
+        instance.setAlertOnLaunch = function(self,value)
+            if type(value) == "boolean" then
+                self.preferences.AlertOnLaunch = value
+                return true
+            end
+            return false
+        end
+
+                --- Alert on Launch getter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return[type=Bool] True if Debug output will be used
+        instance.getAlertOnLaunch = function(self)
+            return self.preferences.AlertOnLaunch
+        end
+
+
+        --- Alert on Launch cooldown getter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return[type=Bool] True if Debug output will be used
+        instance.getAlertOnLaunchCooldown = function(self)
+            return self.preferences.AlertOnLaunchCooldown
+        end
+
+         --- Alert on Launch cooldown setter
+        -- @param self config instance
+        -- @bool value set this value
+        -- @return[type=Bool] True if change was made
+        instance.setAlertOnLaunchCooldown = function(self,value)
+            if type(value) == "number" then
+                self.preferences.AlertOnLaunchCooldown = value
+                return true
+            end
+            return false
+        end
+
+
+
         --- return root radio menu for hound instance
         -- will create one if needed
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @param self config instance
         -- @return root menu entity
         instance.getRadioMenu = function (self)
             if not self.radioMenu.root then
                 self.radioMenu.root = missionCommands.addSubMenuForCoalition(
                     self:getCoalition(), 'ELINT',self:getRadioMenuParent())
-                -- self.radioMenu.root = missionCommands.addSubMenu('ELINT',self:getRadioMenuParent())
             end
             return self.radioMenu.root
         end
 
         --- Remove radio menu root
-        -- @within HoundConfig.instance
-        -- @param self HoundConfig instance
-        -- @return Bool True if menu was removed
+        -- @within HOUND.Config.instance
+        -- @param self HOUND.Config instance
+        -- @return[type=Bool] True if menu was removed
         instance.removeRadioMenu = function (self)
             if self.radioMenu.root ~= nil then
-                missionCommands.removeItem(self.radioMenu.root)
+                missionCommands.removeItemForCoalition(self:getCoalition(),self.radioMenu.root)
                 self.radioMenu.root = nil
+                self:resetSectorPages()
                 return true
             end
             return false
         end
 
+        --- reset sector pagination state before a full menu rebuild
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        instance.resetSectorPages = function(self)
+            self.radioMenu.sectorPages = {}
+            self.radioMenu.sectorCount = 0
+        end
+
+        --- return the correct coalition-level page for the next sector menu
+        -- paginates at MENU_PAGE_LENGTH sectors per page
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return menu page reference for the next sector
+        instance.getSectorMenuPage = function(self)
+            local pages = self.radioMenu.sectorPages
+            local count = self.radioMenu.sectorCount
+            local root = self:getRadioMenu()
+            if #pages == 0 then
+                table.insert(pages, root)
+            end
+
+            local totalItems = count + #pages - 1
+            if totalItems > 0 and (totalItems % HOUND.MENU_PAGE_LENGTH) == 0 then
+                table.insert(pages, missionCommands.addSubMenuForCoalition(
+                    self:getCoalition(),
+                    "More sectors (Page " .. (#pages + 1) .. ")",
+                    pages[#pages]
+                ))
+            end
+
+            self.radioMenu.sectorCount = count + 1
+            local result = pages[#pages]
+            return result
+        end
+
+
         --- return parent for the root menu
-        -- @within HoundConfig.instance
+        -- @within HOUND.Config.instance
         -- @return parent menu or nil if none set (root menu will be in root F10 meun)
         instance.getRadioMenuParent = function(self)
             return self.radioMenu.parent
@@ -279,13 +443,13 @@ do
 
         --- set user defined parent menu for Hound instance
         -- must be set <b>BEFORE</b> calling <code>getRadioMenu()</code>
-        -- @within HoundConfig.instance
-        -- @param self HoundConfig instance
+        -- @within HOUND.Config.instance
+        -- @param self HOUND.Config instance
         -- @param parent desired parent menu
         -- @usage
-        -- local servicesMenu =missionCommands.addSubMenuForCoalition(
+        -- local servicesMenu = missionCommands.addSubMenuForCoalition(
         --          coalition.side.BLUE, 'AWACS, Tankers and ELINT..')
-        -- HoundConfig:setRadioMenuParent(servicesMenu)
+        -- HOUND.Config:setRadioMenuParent(servicesMenu)
         instance.setRadioMenuParent = function (self,parent)
             if type(parent) == "table" or (parent == nil and self.radioMenu.parent) then
                 self:removeRadioMenu()
@@ -295,8 +459,8 @@ do
             return false
         end
 
-        HoundConfig.configMaps[HoundInstanceId] = instance
+        HOUND.Config.configMaps[HoundInstanceId] = instance
 
-        return HoundConfig.configMaps[HoundInstanceId]
+        return HOUND.Config.configMaps[HoundInstanceId]
     end
 end

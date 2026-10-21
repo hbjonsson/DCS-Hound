@@ -1,22 +1,40 @@
 #!/bin/bash
 TARGET_PATH="./include"
-TARGET_FILE="${TARGET_PATH}/HoundElint.lua"
-LDOC=$(which ldoc)
-LUACHECK=$(which luacheck)
+TARGET_BASENAME="HoundElint"
+TARGET_FILE="${TARGET_PATH}/${TARGET_BASENAME}.lua"
+MINIFIED_PATH=${TARGET_PATH}/minified
+mkdir -p ${MINIFIED_PATH}
 
 SED_ARGS="-i"
+LUAROCKS="luarocks"
 $(echo $OSTYPE | grep -q darwin)
 isMacOs=$?
 if [ $isMacOs -eq 0 ]; then
+    export PATH="$PATH:$HOME/.luarocks/bin"
     SED_ARGS="-i .orig -e"
+    LUAROCKS="luarocks --lua-dir=$(brew --prefix)/opt/lua@5.4 --lua-version=5.4"
+fi
+SED=$(which sed)
+LDOC=$(which ldoc) 
+LUACHECK=$(which luacheck)
+LUASRCDIET=$(which luasrcdiet)
+LUA=$(which lua5.1)
+if [ -z ${LUA} ] && [ $isMacOs -eq 0 ]; then
+    LUA=$(which lua5.4)
+fi
+MD_TOC=$(which gh-md-toc)
+if [ -z ${MD_TOC} ]; then
+    MD_TOC="${HOME}/gh-md-toc"
 fi
 
 # initial function setup
 LINT_SRC=0
 BUILD_DOCS=0
 COMPILE=0
-LINT_COMPILED=0
+MINIFY=0
+RELEASE=0
 UPDATE_MISSIONS=0
+FETCH_LIB=0
 
 GREEN="\e[01;32m"
 WHITE_ON_BLUE="\e[1;37;1;44m"
@@ -37,17 +55,34 @@ function check_dependecies {
 
     if [ -z ${LUACHECK} ]; then
         APT="lua-check ${APT}"
-        ROCKS="luachek ${ROCKS}"
+        ROCKS="luacheck ${ROCKS}"
     fi
 
-    if [ ! -z "${APT}" ]; then
+    if [ -z ${LUASRCDIET} ]; then
+        ROCKS="luasrcdiet ${ROCKS}"
+    fi
+
+    if [ ! -f ${MD_TOC} ]; then
+      MD_TOC_VERSION=1.4.0
+      MD_TOC_URL="https://github.com/ekalinin/github-markdown-toc.go/releases/download/v${MD_TOC_VERSION}/gh-md-toc_${MD_TOC_VERSION}_linux_amd64.tar.gz"
+      if [ $isMacOs -eq 0 ]; then
+      MD_TOC_URL=$(echo ${MD_TOC_URL} | sed 's/linux/darwin/')
+      fi
+      curl -L ${MD_TOC_URL} -o ${MD_TOC}.tar.gz
+      tar -xzvf ${MD_TOC}.tar.gz -C ${HOME} gh-md-toc
+      rm  ${MD_TOC}.tar.gz
+      #chmod a+x ${MD_TOC}
+    fi
+
+    if [ ! -z "${APT}" ] || [ ! -z "${ROCKS}" ]; then
       echo "missing Dependecies to install please run"
       echo "using apt"
       echo "sudo apt update; sudo apt install -y ${APT}"
       echo ""
       echo "using rocks"
+      ROCKS="luaunit ${ROCKS}"
       for rock in ${ROCKS[@]}; do
-        echo "lucarocks install ${rock}"
+        echo "${LUAROCKS} install ${rock}"
       done 
       exit 1
     fi
@@ -58,35 +93,71 @@ function lint_src {
     for FILE in src/*.lua; do
         luacheck -g --no-self --no-max-line-length "${FILE}"
     done
+    if [ -f tools/validate_db.lua ]; then
+        highlight "check DB entries"
+        cd tools
+        ${LUA} validate_db.lua
+        cd ..
+    fi
 }
 function build_docs {
+    # TMP_FILE="tmp.lua"
+    # modules=( $(grep -i "@module" src/*.lua | cut -d'@' -f 2 | cut -d' ' -f 2 | sort -u) )
+    # echo > ${TMP_FILE}
+    # for FILE in src/*; do
+    #     cat "${FILE}" >> ${TMP_FILE}
+    # done
     # build Docs
     highlight "building public docs"
-    $LDOC -p "Hound<br> ELINT for DCS" --merge --style !fixed .
+    $LDOC -c config_general.ld -p "Hound<br> ELINT for DCS" --merge --multimodule  --style !fixed .
 
-    highlight "Building Dev Docs$"
-    $LDOC -p "Hound<br> ELINT for DCS" -a -d docs/dev_docs --merge --style !fixed src
+    highlight "Building Dev Docs"
+    $LDOC -c config_developer.ld -p "Hound<br> ELINT for DCS" -a -d docs/web/dev --merge --multimodule  --style !fixed src
 }
+
+# function build_markdown_docs {
+#     highlight "Building Markdown API Docs"
+#     python3 tools/generate_md_docs.py --src-dir ./src --public-output-dir ./docs --dev-output-dir ./docs/dev --skip-integration-guide -v
+# }
+
+function build_llm_docs {
+    highlight "Building Markdown API Docs + LLM Integration Guide"
+    python3 tools/generate_md_docs.py --src-dir ./src --public-output-dir ./ --dev-output-dir ./ --guides-dir ./docs -v --use-opencode
+}
+
+function build_toc {
+    local README=${1:-README_OLD.MD}
+    highlight "Buding TOC for ${README}"
+
+   TOC_CONTENT=$(${MD_TOC} --hide-footer ./docs/src/${README}) \
+     envsubst < ./docs/src/${README} > ./${README}
+} 
 
 function lint_compiled {
     highlight "lint compiled Hound"
     luacheck -g --no-self --no-max-line-length "${TARGET_FILE}"
+
+    if [ -f ${TARGET_BASENMAE}_.lua ]; then
+        highlight "lint minified Hound"
+        luacheck -g --no-self --no-max-line-length "${TARGET_BASENMAE}_.lua"
+    fi
 }
 
 function compile {
+    set -e
     highlight "Compile script"
     echo "-- Hound ELINT system for DCS" > ${TARGET_FILE}
-    echo 'env.info("Starting to load Hound ELINT...")' >> ${TARGET_FILE}
+    # echo 'env.info("[Hound] - start loading (".. HOUND.VERSION..")")' >> ${TARGET_FILE}
 
     mkdir -p $TARGET_PATH
-    for FILE in src/*; do
+    for FILE in src/*.lua; do
         cat "${FILE}" >> ${TARGET_FILE}
     done
 
     # remove dev stuff
     highlight "cleaning Dev comments"
     sed -E ${SED_ARGS} '/StopWatch|:Stop()/d' ${TARGET_FILE}
-    sed ${SED_ARGS} '/HoundLogger.trace("/d' ${TARGET_FILE}
+    sed ${SED_ARGS} '/HOUND.Logger.trace("/d' ${TARGET_FILE}
 
     # disable logging
     sed ${SED_ARGS} "s/DEBUG = true/DEBUG = false/" ${TARGET_FILE}
@@ -95,8 +166,11 @@ function compile {
     sed ${SED_ARGS} '/^[[:space:]]*--/d' ${TARGET_FILE}
     sed ${SED_ARGS} '$!N;/^[[:space:]]*$/{$q;D;};P;D;' ${TARGET_FILE}
 
-    GIT_BRANCH="-$(git branch --show-current | sed 's/[^a-zA-Z 0-9]/\\&/g')"
-    if [ ${GIT_BRANCH} == "-main" ]; 
+    # GIT_BRANCH="-$(git branch --show-current | sed 's/[^a-zA-Z 0-9]/\\&/g')-$(date +%Y%m%d)"
+#    if [ ${GIT_BRANCH} == "-main-$(date +%Y%m%d)" ] || [ $RELEASE -eq 1 ]; 
+
+    GIT_BRANCH="-TRUNK-$(date +%Y%m%d)"
+    if [ $RELEASE -eq 1 ]; 
        then GIT_BRANCH="";
     fi
     sed ${SED_ARGS} "s/-TRUNK/""${GIT_BRANCH}""/" ${TARGET_FILE}
@@ -107,9 +181,15 @@ function compile {
     if [ -f  ${TARGET_FILE}.orig ]; then
     rm -f ${TARGET_FILE}.orig
     fi
-
-    # basic lint
+    set +e
 } 
+
+function minify_compiled {
+     # create minified versions
+    mkdir -p ${MINIFIED_PATH}
+    ${LUASRCDIET} --basic --opt-emptylines ${TARGET_FILE} -o ${MINIFIED_PATH}/${TARGET_BASENAME}_.lua
+
+}
 
 function print_includes {
     for FILE in src/*.lua; do
@@ -118,6 +198,7 @@ function print_includes {
 }
 
 function update_mission {
+    set -e
     SCRIPT_PATH="l10n/DEFAULT"
     MISSION_PATH=${1:-"demo_mission"}
     MISSION_FILE=${2:-"HoundElint_demo"}
@@ -132,6 +213,7 @@ function update_mission {
 
     cd ${MISSION_PATH}
     /usr/bin/zip -ur ${MISSION_FILE}.miz ${SCRIPT_PATH}
+    set +e
     until [ -d "./include" ]; do
         cd ..
     done
@@ -161,11 +243,20 @@ do
         ;;
         --compile | -c )
             COMPILE=1
-            LINT_COMPILED=1
             shift
         ;;
-
+        --minify )
+            MINIFY=1
+            shift
+        ;;
         --missions | -m )
+            UPDATE_MISSIONS=1
+            shift
+        ;;
+        --release )
+            RELEASE=1
+            BUILD_DOCS=1
+            COMPILE=1
             UPDATE_MISSIONS=1
             shift
         ;;
@@ -173,7 +264,6 @@ do
             LINT_SRC=1
             BUILD_DOCS=1
             COMPILE=1
-            LINT_COMPILED=1
             UPDATE_MISSIONS=1
             break
         ;;
@@ -189,17 +279,24 @@ check_dependecies
 if [ $LINT_SRC -eq 1 ]; then
     lint_src
 fi
-if [ $BUILD_DOCS -eq 1 ]; then
-    build_docs
-fi
+
 if [ $COMPILE -eq 1 ]; then
     compile
-fi
-if [ ${LINT_COMPILED} -eq 1 ]; then
+    if [ $MINIFY -eq 1 ]; then
+        minify_compiled
+    fi
     lint_compiled
 fi
+
+
 if [ $UPDATE_MISSIONS -eq 1 ]; then
     update_mission "demo_mission/Caucasus_demo" "HoundElint_demo"
-    update_mission "demo_mission/Syria_POC" "Hound_Demo_SyADFGCI"
     update_mission "demo_mission/Syria_HARM" "Hound_Demo_syria"
+    update_mission "demo_mission/Syria_POC" "Hound_Demo_SyADFGCI"
+fi
+
+if [ $BUILD_DOCS -eq 1 ]; then
+    build_docs
+    build_llm_docs
+    build_toc
 fi

@@ -1,53 +1,93 @@
 --- Hound
 -- Elint system for DCS
 -- @author uri_ba
--- @copyright uri_ba 2020-2021
+-- @copyright uri_ba 2020-2024
 -- @module HOUND
 
 do
-    if STTS ~= nil then
-        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone"
+    if STTS ~= nil and STTS.DIRECTORY == "C:\\Users\\Ciaran\\Dropbox\\Dev\\DCS\\DCS-SRS\\install-build" then
+        STTS.DIRECTORY = "C:\\Program Files\\DCS-SimpleRadio-Standalone\\ExternalAudio"
+    end
+
+    -- randomize the randomness.
+    math.random(math.ceil(timer.getTime0()+timer.getTime()))
+    for i=1,math.random(2,5) do
+        math.random(math.random(math.floor(math.random()*300),300),math.random(math.floor(math.random()*10000),10000))
     end
 end
 
 do
-    --- HOUND global settings
-    -- Global settings and paramters
+    --- Global settings and paramters
     -- @table HOUND
     -- @field VERSION Hound Version
     -- @field DEBUG Hound will do extended debug output to log (for development)
     -- @field ELLIPSE_PERCENTILE Defines the percentile of datapoints used to calculate uncertenty ellipse
-    -- @field NUM_DATAPOINTS Number of datapoints per platform a contact keeps (FIFO)
+    -- @field DATAPOINTS_NUM Number of datapoints per platform a contact keeps (FIFO)
+    -- @field DATAPOINTS_INTERVAL Time between stored data points
     -- @field CONTACT_TIMEOUT Timout for emitter to be silent before being dropped from contacts
+    -- @field MAX_ANGULAR_RES_DEG The maximum (worst) platform angular resolution acceptable
+    -- @field ANTENNA_FACTOR Global factor of antenna size (bigger antenna == better accuracy). Allows mission builder to quickly nerf or boost hound performace (default 1.0).
     -- @field MGRS_PRECISION Number of digits in MGRS conversion
+    -- @field EXTENDED_INFO Hound will add more in depth uncertenty info to controller messages (default is true)
+    -- @field FORCE_MANAGE_MARKERS Force Hound to use internal counter for markIds (default is true).
+    -- @field USE_LEGACY_MARKERS Force Hound to use normal markers for radar positions (default is true)
+    -- @field MARKER_MIN_ALPHA Minimum opacity for area markers
+    -- @field MARKER_MAX_ALPHA Maximum opacity for area markers
+    -- @field MARKER_LINE_OPACITY Opacity of the line around the area markers
+    -- @field MARKER_TEXT_POINTER Char/string used as pointer on text markers
+    -- @field TTS_ENGINE Hound will use the table to determin TTS engine priority
+    -- @field TTS_TRANSLATE_SETTINGS table that will be passed to HoundTTS if used, to allow inline translation
+    -- @field MENU_PAGE_LENGTH Number of Items Hound will put in a menu before starting a new menu page
+    -- @field REF_DIST Reference distance for contact scoring. Used to calculate the weight of datap
+    -- @field KALMAN_DEBUG If true, will print kalman filter debug info (currently not implemented, default is false)
+    -- @field AUTO_ADD_PLATFORM_BY_PAYLOAD If true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
     HOUND = {
-        VERSION = "0.2.0-TRUNK",
+        VERSION = "0.5.2-TRUNK",
         DEBUG = true,
         ELLIPSE_PERCENTILE = 0.6,
-        NUM_DATAPOINTS = 15,
+        DATAPOINTS_NUM = 30,
+        DATAPOINTS_INTERVAL = 30,
         CONTACT_TIMEOUT = 900,
-        MGRS_PRECISION = 3,
+        MAX_ANGULAR_RES_DEG = 20,
+        ANTENNA_FACTOR = 1.0,
+        MGRS_PRECISION = 5,
         EXTENDED_INFO = true,
-        MIST_VERSION = tonumber(table.concat({mist.majorVersion,mist.minorVersion},"."))
+        -- FORCE_MANAGE_MARKERS = true,
+        USE_LEGACY_MARKERS = true,
+        MARKER_MIN_ALPHA = 0.05,
+        MARKER_MAX_ALPHA = 0.2,
+        MARKER_LINE_OPACITY = 0.3,
+        MARKER_TEXT_POINTER = "⇙ ", -- "¤ « "
+        TTS_ENGINE = {'HOUND','STTS'},
+        TTS_TRANSLATE_SETTINGS = {}, -- HoundTTS translation settings, use HoundTTS syntax. e.g { provider = "google", language  = "fr" }
+        MENU_PAGE_LENGTH = 9,
+        REF_DIST = 75000, -- Do not change, used for datapoint weighting
+        KALMAN_DEBUG = false,
+        AUTO_ADD_PLATFORM_BY_PAYLOAD = true, -- if true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
     }
 
     --- Map Markers ENUM
     -- @table HOUND.MARKER
-    -- @field NONE no ellipse is drawn
+    -- @field NONE no markers are drawn
+    -- @field SITE_ONLY only site markers are drawn
+    -- @field POINT only draw point marker for emitters
     -- @field CIRCLE a circle of uncertenty will be drawn
     -- @field DIAMOND a diamond will be drawn with 4 points representing uncertenty ellipse
     -- @field OCTAGON ellipse will be drawn with 8 points (diamon with midpoints)
     -- @field POLYGON ellipse will be drawn as a 16 sides polygon
     HOUND.MARKER = {
         NONE = 0,
-        CIRCLE = 1,
-        DIAMOND = 2,
-        OCTAGON = 3,
-        POLYGON = 4
+        SITE_ONLY = 1,
+        POINT = 2,
+        CIRCLE = 3,
+        DIAMOND = 4,
+        OCTAGON = 5,
+        POLYGON = 6
     }
 
     --- Hound Events
     -- @table EVENTS
+    -- @field NO_CHANGE nothing changed in the object
     -- @field HOUND_ENABLED Hound Event
     -- @field HOUND_DISABLED Hound Event
     -- @field PLATFORM_ADDED Hound Event
@@ -62,10 +102,14 @@ do
     -- @field SITE_NEW Hound Event
     -- @field SITE_CREATED Hound Event
     -- @field SITE_UPDATED Hound Event
+    -- @field SITE_CLASSIFIED Hound Event
     -- @field SITE_REMOVED Hound Event
     -- @field SITE_ALIVE Hound Event
     -- @field SITE_ASLEEP Hound Event
+    -- @field SITE_LAUNCH Hound Event
+-- @field RADAR_LAUNCH Hound Event
     HOUND.EVENTS = {
+        NO_CHANGE     = 0,
         HOUND_ENABLED = 1,
         HOUND_DISABLED = 2,
         PLATFORM_ADDED = 3,
@@ -83,9 +127,12 @@ do
         SITE_NEW = 15,
         SITE_CREATED = 16,
         SITE_UPDATED = 17,
-        SITE_REMOVED = 18,
-        SITE_ALIVE = 19,
-        SITE_ASLEEP = 20
+        SITE_CLASSIFIED = 18,
+        SITE_REMOVED = 19,
+        SITE_ALIVE = 20,
+        SITE_ASLEEP = 21,
+        SITE_LAUNCH = 22,
+        RADAR_LAUNCH = 23,
     }
 
     --- Event structure
@@ -95,6 +142,25 @@ do
     -- @field coalition coalition ID of the Hound Instance that emitted the event
     -- @field initiator DCS Unit or HoundContact Subclass that triggered the event
     -- @field time of event
+
+    --- Hound Instances
+    -- @section Instances
+
+    --- Hound Instances
+    -- every instance created will be added to this list with it's HoundId as key.
+    HOUND.INSTANCES = {}
+
+    --- Get instance
+    -- get hound instance by ID
+    -- @param[type=number] InstanceId instance ID to get
+    -- @return Hound Instance object or nil
+    function HOUND.getInstance(InstanceId)
+        if HOUND.setContains(HOUND.INSTANCES,InstanceId) then
+            return HOUND.INSTANCES[InstanceId]
+        end
+        return nil
+    end
+
 
     --- Global functions
     -- @section globals
@@ -121,20 +187,24 @@ do
     -- @param handler handler to register
     -- @see HOUND.EVENTS
     function HOUND.addEventHandler(handler)
-        HoundEventHandler.addEventHandler(handler)
+        HOUND.EventHandler.addEventHandler(handler)
     end
 
     --- deregister event handler (global)
     -- @param handler handler to remove
     -- @see HOUND.EVENTS
     function HOUND.removeEventHandler(handler)
-        HoundEventHandler.removeEventHandler(handler)
+        HOUND.EventHandler.removeEventHandler(handler)
     end
+
+    -- setup for inheritance classes
+    HOUND.Contact = {}
+    HOUND.Comms = {}
 
     --- helper code for class inheritance
     -- @local
     -- @param baseClass Base class to inherit from
-    function inheritsFrom( baseClass )
+    function HOUND.inheritsFrom( baseClass )
 
         local new_class = {}
         local class_mt = { __index = new_class }
@@ -164,7 +234,6 @@ do
         -- Return true if the caller is an instance of theClass
         function new_class:isa( theClass )
             local b_isa = false
-
             local cur_class = new_class
 
             while ( nil ~= cur_class ) and ( false == b_isa ) do
@@ -174,10 +243,8 @@ do
                     cur_class = cur_class:superClass()
                 end
             end
-
             return b_isa
         end
-
         return new_class
     end
 
@@ -185,18 +252,31 @@ do
     -- @local
     -- @param T table
     -- @return length of T
-    function Length(T)
+    function HOUND.Length(T)
         local count = 0
         if T ~= nil then for _ in pairs(T) do count = count + 1 end end
         return count
     end
 
-    --- check if set contains a provided key
+    --- Shallow Copy a table
+    -- @local
+    -- @param T table to copy (must be flat table)
+    -- @return copied table
+    function HOUND.shallowCopy(T)
+        if type(T) ~= "table" then return {} end
+        local newTable = {}
+        for k,v in pairs(T) do
+            newTable[k] = v
+        end
+        return newTable
+    end
+
+    --- check if set contains a provided key (case sensitive)
     -- @local
     -- @param set Hash table to check
     -- @param key to check
-    -- @return Bool. True if key exists in set
-    function setContains(set, key)
+    -- @return[type=bool] True if key exists in set
+    function HOUND.setContains(set, key)
         if not set or not key then return false end
         return set[key] ~= nil
     end
@@ -205,8 +285,8 @@ do
     -- @local
     -- @param set Table to check
     -- @param value Value to check
-    -- @return Bool. True if value exists in set
-    function setContainsValue(set,value)
+    -- @return[type=bool] True if value exists in set
+    function HOUND.setContainsValue(set,value)
         if not set or not value then return false end
         for _,v in pairs(set) do
             if v == value then
@@ -216,37 +296,62 @@ do
         return false
     end
 
-    --- map input to range (Arduino implementation)
+    --- return set intersection product
     -- @local
-    -- @param input value
-    -- @param in_min Minimum allowble input value
-    -- @param in_max Maximum allowable input value
-    -- @param out_min Minimum allowable output value
-    -- @param out_max Maximum allowable output value
-    -- @return calculated mapped value
-    -- @usage map(10,0,10,0,100) = 100
-    --  map(0.5,0,1,0,100) = 50
-    function Map(input, in_min, in_max, out_min, out_max)
-        return (input - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-    end
+    -- @param a Table
+    -- @param b Table
+    -- @return Table
+    function HOUND.setIntersection(a,b)
+        local res = {}
+        for k in pairs(a) do
+          res[k] = b[k]
+        end
+        return res
+      end
 
-    --- return gausion random number
+    --- return Gaussian random number
     -- @local
     -- @param mean Mean value (i.e center of the gausssian curve)
-    -- @param sigma amount of variance in the random value
+    -- @param sigma standard deviation (σ) of the distribution
     -- @return random number in gaussian space
-    function Gaussian(mean, sigma)
-        return math.sqrt(-2 * sigma * math.log(math.random())) *
+    function HOUND.Gaussian(mean, sigma)
+        -- Box-Muller transform: sqrt(-2*ln(U)) * cos(2π*V) gives standard normal
+        -- Multiply by sigma and add mean for desired distribution
+        return math.sqrt(-2 * math.log(math.random())) * sigma *
                    math.cos(2 * math.pi * math.random()) + mean
     end
 
-    -- function StDev()
-    --     local sum, sumsq, k = 0, 0, 0
-    --     return function(n)
-    --         sum, sumsq, k = sum + n, sumsq + n ^ 2, k + 1
-    --         return math.sqrt((sumsq / k) - (sum / k) ^ 2)
-    --     end
-    -- end
+    --- return clamped value
+    -- @local
+    -- @param value Value to clamp
+    -- @param min Minimum value
+    -- @param max Maximum value
+    -- @return clamped value
+    function HOUND.Clamp(value, min, max)
+        return math.max(min, math.min(max, value))
+    end
+
+    --- return mixed of gaussian and uniform distribution
+    -- @local
+    -- @param mean Mean value
+    -- @param sigma Standard deviation
+    -- @param uniform Uniform distribution factor (0-1)
+    -- @return mixed value
+    function HOUND.MixedGaussian(mean, sigma, uniform)
+        return mean + sigma * (math.random() - 0.5) * uniform + HOUND.Gaussian(0, sigma) * (1 - uniform)
+    end
+
+    --- reverse table lookup
+    -- @local
+    -- @param #tbl table
+    -- @param value to search
+    -- @return the key wher value was found
+    function HOUND.reverseLookup(tbl,value)
+        if type(tbl) ~= "table" or type(value) == "nil" then return end
+        for k,v in pairs(tbl) do
+            if v == value then return k end
+        end
+    end
 
     --- Split String on delimited
     -- @local

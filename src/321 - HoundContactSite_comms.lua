@@ -1,0 +1,210 @@
+--- HOUND.Contact.Site_comms
+-- @module HOUND.Contact.Site
+do
+    -- local l_math = math
+    local l_mist = HOUND.Mist
+    local HoundUtils = HOUND.Utils
+
+    --- generate Text for the Radio menu item
+    -- @return string
+    function HOUND.Contact.Site:getRadioItemText()
+        if not self:hasPosData() then return self:getName() end
+
+        local GridPos,BePos = self:getTextData(true,1)
+        BePos = BePos:gsub(" for ","/")
+        return self:getName() .. " - BE: " .. BePos .. " (".. GridPos ..")"
+    end
+
+    --- Generate text items for entire site
+    -- @return #table all radio items for site
+    function HOUND.Contact.Site:getRadioItemsText()
+        local items = {
+            ['dcsName'] = self:getDcsName(),
+            ['txt'] = self:getRadioItemText(),
+            ['typeAssigned'] = self:getTypeAssigned(),
+            ['pos'] = self:getPos(),
+            ['last_seen'] = self.last_seen,
+            ['emitters'] = {}
+        }
+        for _,emitter in ipairs(self.emitters) do
+            if emitter:hasPosData() then
+                local emitterEntry = {
+                    ['dcsName'] = emitter:getDcsName(),
+                    ['txt'] = emitter:getRadioItemText()
+                }
+                if emitter == self.primaryEmitter then
+                    emitterEntry.txt = "★ " .. emitterEntry.txt
+                end
+                table.insert(items['emitters'],emitterEntry)
+            end
+        end
+        return items
+    end
+
+    --- generate PopUp report
+    -- @param isTTS Bool. If true message will be for TTS. False will make a text message
+    -- @param[type=string] sectorName Name of primary sector if present function will only return sector data
+    -- @return string. compiled message
+    function HOUND.Contact.Site:generatePopUpReport(isTTS,sectorName)
+        local msg = self:getDesignation(true) .. ", " .. self:getName() ..  ", is active"
+
+        if sectorName then
+            msg = msg .. " in " .. sectorName
+        else
+            if self:hasPosData() then
+                local GridPos,BePos
+                if isTTS then
+                    GridPos,BePos = self:getTtsData(true,1)
+                    msg = msg .. ", bullseye " .. BePos .. ", grid ".. GridPos
+                else
+                    GridPos,BePos = self:getTextData(true,1)
+                    msg = msg .. " BE: " .. BePos .. " (grid ".. GridPos ..")"
+                end
+            end
+        end
+        return msg .. "."
+    end
+
+    --- generate Radar dead report
+    -- @param isTTS Bool. If true message will be for TTS. False will make a text message
+    -- @param[type=string] sectorName Name of primary sector if present function will only return sector data
+    -- @return string. compiled message
+    function HOUND.Contact.Site:generateDeathReport(isTTS,sectorName)
+        local msg = self:getDesignation(true) ..  ", " .. self:getName()  .. " is down"
+        if sectorName then
+            msg = msg .. " in " .. sectorName
+        else
+            if self:hasPosData() then
+                local GridPos,BePos
+                if isTTS then
+                    GridPos,BePos = self:getTtsData(true,1)
+                    msg = msg .. ", bullseye " .. BePos .. ", grid ".. GridPos
+                else
+                    GridPos,BePos = self:getTextData(true,1)
+                    msg = msg .. " BE: " .. BePos .. " (grid ".. GridPos ..")"
+                end
+            end
+        end
+        return msg .. "."
+    end
+
+    --- generate Radar dead report
+    -- @param isTTS Bool. If true message will be for TTS. False will make a text message
+    -- @param[type=string] sectorName Name of primary sector if present function will only return sector data
+    -- @return string. compiled message
+    function HOUND.Contact.Site:generateAsleepReport(isTTS,sectorName)
+        local msg =  self:getDesignation(true)..  ", " .. self:getName() .. " is asleep"
+        if sectorName then
+            msg = msg .. " in " .. sectorName
+        else
+            if self:hasPosData() then
+                local GridPos,BePos
+                if isTTS then
+                    GridPos,BePos = self:getTtsData(true,1)
+                    msg = msg .. ", bullseye " .. BePos .. ", grid ".. GridPos
+                else
+                    GridPos,BePos = self:getTextData(true,1)
+                    msg = msg .. " BE: " .. BePos .. " (grid ".. GridPos ..")"
+                end
+            end
+        end
+        return msg .. "."
+    end
+
+    --- generate Ident report
+    -- @param isTTS Bool. If true message will be for TTS. False will make a text message
+    -- @param[type=string] sectorName Name of primary sector if present function will only return sector data
+    -- @return string. compiled message
+    function HOUND.Contact.Site:generateIdentReport(isTTS,sectorName)
+        local msg = self:getName()
+
+        if sectorName then
+            msg = msg .. " in " .. sectorName
+            msg = msg .. ", identified as " .. self:getDesignation(true)
+        else
+            msg = msg .. ", identified as " .. self:getDesignation(true)
+            if self:hasPosData() then
+                local GridPos,BePos
+                if isTTS then
+                    GridPos,BePos = self:getTtsData(true,1)
+                    msg = msg .. ", bullseye " .. BePos .. ", grid ".. GridPos
+                else
+                    GridPos,BePos = self:getTextData(true,1)
+                    msg = msg .. " BE: " .. BePos .. " (grid ".. GridPos ..")"
+                end
+            end
+        end
+        return msg .. "."
+    end
+
+    --- Generate TTS brief for the Site (for ATIS)
+    -- @param NATO (bool) True will generate NATO Brevity brief
+    -- @return string containing
+    function HOUND.Contact.Site:generateTtsBrief(NATO)
+        if self:getType() == "Naval" then
+            local boatData = {}
+            for _,emitter in ipairs(self:getEmitters()) do
+                table.insert(boatData,emitter:generateTtsBrief(NATO))
+            end
+            return table.concat(boatData," ")
+        end
+        local str = ""
+        if not self:hasPosData() or not self.uncertenty_data then return str end
+        local phoneticGridPos,phoneticBulls = self:getTtsData(false,1)
+        local reportedName = self:getName() .. " "
+        if NATO then
+            reportedName = ""
+        end
+        str = reportedName .. self:getDesignation(NATO)
+        if self:isAccurate() then
+            str = str .. ", reported"
+        else
+            str = str .. ", " .. HoundUtils.TTS.getVerbalContactAge(self.last_seen,true,NATO)
+        end
+        if NATO then
+            str = str .. " bullseye " .. phoneticBulls
+        else
+            str = str .. " at " .. phoneticGridPos
+        end
+        if not self:isAccurate() then
+            str = str .. ", accuracy " .. HoundUtils.TTS.getVerbalConfidenceLevel(self.uncertenty_data.r)
+        end
+        str = str .. "."
+        return str
+    end
+
+    --- Generate Intel brief Message (for export)
+    -- @return string - compiled multi-line message for site
+    function HOUND.Contact.Site:generateIntelBrief()
+        -- SiteId,SiteType,(TrackId,RadarType,State,Bullseye,Latitude,Longitude,MGRS,Accuracy,DCS type,DCS Unit),DCS Group
+        if #self.emitters == 0 then return end
+        local items = {}
+
+        for _,emitter in ipairs(self.emitters) do
+            local body = emitter:generateIntelBrief()
+            if body ~= "" then
+                local entry = table.concat({self:getName(),self:getDesignation(true),body,self.DcsObjectName},",")
+                table.insert(items,entry)
+            end
+        end
+        return items
+    end
+
+    --- Generate Site export object
+    -- @return exported object
+    function HOUND.Contact.Site:export()
+        local report = {
+            name = self:getName(),
+            DcsObjectName = self:getDcsName(),
+            gid = self.gid % 100,
+            Type = self:getDesignation(true),
+            last_seen = self.last_seen,
+            emitters = {}
+        }
+        if #self.emitters == 0 then return report end
+        for _,emitter in ipairs(self.emitters) do
+            table.insert(report.emitters,emitter:export())
+        end
+        return report
+    end
+end

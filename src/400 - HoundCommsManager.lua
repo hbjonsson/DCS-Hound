@@ -1,24 +1,25 @@
 --- Hound Comms Manager (Base class)
--- @module HoundCommsManager
+-- @module HOUND.Comms.Manager
 do
-    --- HoundCommsManager decleration
-    -- @type HoundCommsManager
-    HoundCommsManager = {}
-    HoundCommsManager.__index = HoundCommsManager
+    local HoundUtils = HOUND.Utils
+    --- HOUND.Comms.Manager decleration
+    -- @type HOUND.Comms.Manager
+    HOUND.Comms.Manager = {}
+    HOUND.Comms.Manager.__index = HOUND.Comms.Manager
 
-    --- HoundCommsManager create
+    --- HOUND.Comms.Manager create
     -- @string sector name of parent sector
     -- @param houndConfig HoundConfig instance
     -- @tab[opt] settings table containing comms instance settings
     -- @return CommsManager Instance
-    function HoundCommsManager:create(sector,houndConfig,settings)
+    function HOUND.Comms.Manager:create(sector,houndConfig,settings)
         if (not houndConfig and type(houndConfig) ~= "table") or
             (not sector and type(sector) ~= "string") then
-                HoundLogger.warn("[Hound] - Comm Controller could not be initilized, missing params")
+                HOUND.Logger.warn("[Hound] - Comm Controller could not be initilized, missing params")
                 return nil
         end
         local CommsManager = {}
-        setmetatable(CommsManager, HoundCommsManager)
+        setmetatable(CommsManager, HOUND.Comms.Manager)
         CommsManager.enabled = false
         CommsManager.transmitter = nil
         CommsManager.sector = nil
@@ -30,14 +31,14 @@ do
 
         CommsManager.settings = {
             freq = 250.000,
-            modulation = "AM",
             volume = "1.0",
             name = "Hound",
             speed = 0,
             voice = nil,
             gender = nil,
             culture = nil,
-            interval = 0.5
+            interval = 0.5,
+            freqAlias = nil
         }
 
         CommsManager.preferences = {
@@ -45,7 +46,7 @@ do
             enabletext = false
         }
 
-        if not STTS then
+        if not HoundUtils.TTS.isAvailable() then
             CommsManager.preferences.enabletts = false
         end
 
@@ -54,7 +55,7 @@ do
         -- CommsManager.updateSettings = function (self,settings)
         --     for k,v in pairs(settings) do
         --         local k0 = tostring(k):lower()
-        --         if setContainsValue({"enabletts","enabletext","alerts"},k0) then
+        --         if HOUND.setContainsValue({"enabletts","enabletext","alerts"},k0) then
         --             self.preferences[k0] = v
         --         else
         --             self.settings[k0] = v
@@ -62,7 +63,7 @@ do
         --     end
         -- end
 
-        if type(settings) == "table" and Length(settings) > 0 then
+        if type(settings) == "table" and HOUND.Length(settings) > 0 then
             CommsManager:updateSettings(settings)
         end
         return CommsManager
@@ -73,10 +74,10 @@ do
 
     --- Update settings
     -- @param settings #table a settings table
-    function HoundCommsManager:updateSettings(settings)
+    function HOUND.Comms.Manager:updateSettings(settings)
         for k,v in pairs(settings) do
             local k0 = tostring(k):lower()
-            if setContainsValue({"enabletts","enabletext","alerts"},k0) then
+            if HOUND.setContainsValue({"enabletts","enabletext","alerts","namedchannel"},k0) then
                 self.preferences[k0] = v
             else
                 self.settings[k0] = v
@@ -84,7 +85,7 @@ do
         end
     end
     --- enable comm instance
-    function HoundCommsManager:enable()
+    function HOUND.Comms.Manager:enable()
         self.enabled = true
         if self.scheduler == nil then
             self.scheduler = timer.scheduleFunction(self.TransmitFromQueue, self, timer.getTime() + self.settings.interval)
@@ -93,7 +94,7 @@ do
     end
 
     --- disable comm instance
-    function HoundCommsManager:disable()
+    function HOUND.Comms.Manager:disable()
         if self.scheduler then
             timer.removeFunction(self.scheduler)
             self.scheduler = nil
@@ -106,17 +107,17 @@ do
     -- @section Settings
 
     --- is comm instance enabled
-    -- @return Bool True if enabled
-    function HoundCommsManager:isEnabled()
+    -- @return[type=Bool] True if enabled
+    function HOUND.Comms.Manager:isEnabled()
         return self.enabled
     end
 
     --- get value of setting in settings
     -- @param key config key requested
     -- @return settings[key]
-    function HoundCommsManager:getSettings(key)
+    function HOUND.Comms.Manager:getSettings(key)
         local k0 = tostring(key):lower()
-        if setContainsValue({"enabletts","enabletext","alerts"},k0) then
+        if HOUND.setContainsValue({"enabletts","enabletext","alerts","namedchannel"},k0) then
             return self.preferences[tostring(key):lower()]
         else
             return self.settings[tostring(key):lower()]
@@ -126,9 +127,9 @@ do
     --- set value of setting in settings
     -- @param key config key requested
     -- @param value desired value
-    function HoundCommsManager:setSettings(key,value)
+    function HOUND.Comms.Manager:setSettings(key,value)
         local k0 = tostring(key):lower()
-        if setContainsValue({"enabletts","enabletext","alerts"},k0) then
+        if HOUND.setContainsValue({"enabletts","enabletext","alerts","namedchannel"},k0) then
             self.preferences[k0] = value
         else
             self.settings[k0] = value
@@ -136,52 +137,52 @@ do
     end
 
     --- enable text messages
-    function HoundCommsManager:enableText()
+    function HOUND.Comms.Manager:enableText()
         self:setSettings("enableText",true)
     end
 
     --- disable text messages
-    function HoundCommsManager:disableText()
+    function HOUND.Comms.Manager:disableText()
         self:setSettings("enableText",false)
     end
 
     --- enable text messages
-    function HoundCommsManager:enableTTS()
-        if STTS ~= nil then
+    function HOUND.Comms.Manager:enableTTS()
+        if HoundUtils.TTS.isAvailable() then
             self:setSettings("enableTTS",true)
         end
     end
 
     --- disable text messages
-    function HoundCommsManager:disableTTS()
+    function HOUND.Comms.Manager:disableTTS()
         self:setSettings("enableTTS",false)
     end
 
     --- enable Alert messages
-    function HoundCommsManager:enableAlerts()
+    function HOUND.Comms.Manager:enableAlerts()
         self:setSettings("alerts",true)
     end
 
     --- disable Alert messages
-    function HoundCommsManager:disableAlerts()
+    function HOUND.Comms.Manager:disableAlerts()
         self:setSettings("alerts",false)
     end
 
     --- set transmitter
     -- @param transmitterName (String) name of the Unit which will be transmitter
-    function HoundCommsManager:setTransmitter(transmitterName)
+    function HOUND.Comms.Manager:setTransmitter(transmitterName)
         if not transmitterName then transmitterName = "" end
         local candidate = Unit.getByName(transmitterName)
-        if candidate == nil then
+        if not HoundUtils.Dcs.isUnit(candidate) then
             candidate = StaticObject.getByName(transmitterName)
         end
-        if candidate == nil and self.transmitter then
+        if not HoundUtils.Dcs.isStaticObject(candidate) and self.transmitter then
             self:removeTransmitter()
             return
         end
         if self.transmitter ~= candidate then
             self.transmitter = candidate
-            HoundEventHandler.publishEvent({
+            HOUND.EventHandler.publishEvent({
                     id = HOUND.EVENTS.TRANSMITTER_ADDED,
                     houndId = self.houndConfig:getId(),
                     initiator = self.sector,
@@ -191,10 +192,10 @@ do
     end
 
     --- Remove transmitter
-    function HoundCommsManager:removeTransmitter()
+    function HOUND.Comms.Manager:removeTransmitter()
         if self.transmitter ~= nil then
             self.transmitter = nil
-            HoundEventHandler.publishEvent({
+            HOUND.EventHandler.publishEvent({
                     id = HOUND.EVENTS.TRANSMITTER_REMOVED,
                     houndId = self.houndConfig:getId(),
                     initiator = self.sector
@@ -204,13 +205,13 @@ do
 
     --- get configured callsign
     -- @return string. currently configured callsign
-    function HoundCommsManager:getCallsign()
+    function HOUND.Comms.Manager:getCallsign()
         return self:getSettings("name")
     end
 
     --- set callsign
     -- @string callsign
-    function HoundCommsManager:setCallsign(callsign)
+    function HOUND.Comms.Manager:setCallsign(callsign)
         if type(callsign) == "string" then
             self:setSettings("name",callsign)
         end
@@ -218,22 +219,36 @@ do
 
     --- get first configured frequency
     -- @return string first frequency configured
-    function HoundCommsManager:getFreq()
+    function HOUND.Comms.Manager:getFreq()
         return self:getFreqs()[1]
     end
 
     --- get table of all configured frequencies
     -- @return table of all configured frequencies
-    function HoundCommsManager:getFreqs()
+    function HOUND.Comms.Manager:getFreqs()
         local freqs = string.split(self.settings.freq,",")
         local mod = string.split(self.settings.modulation,",")
         local retval = {}
 
         for i,freq in ipairs(freqs) do
-            local str = string.format("%.3f",tonumber(freq)) .. " " .. (mod[i] or "AM")
+            local str = string.format("%.3f",tonumber(freq)) .. " " .. (mod[i] or HoundUtils.TTS.getdefaultModulation(freq))
             table.insert(retval,str)
         end
         return retval
+    end
+
+    --- get configured Frequeny Alias
+    -- @return string. currently configured Frequeny Alias
+    function HOUND.Comms.Manager:getAlias()
+        return self:getSettings("freqAlias")
+    end
+
+    --- set Frequeny Alias
+    -- @string alias
+    function HOUND.Comms.Manager:setAlias(alias)
+        if type(alias) == "string" then
+            self:setSettings("freqAlias",alias)
+        end
     end
 
     --- Message Handling
@@ -241,36 +256,55 @@ do
 
     --- Add message object to queue
     -- @tab obj the message object to be added
-    function HoundCommsManager:addMessageObj(obj)
+    function HOUND.Comms.Manager:addMessageObj(obj)
         if obj.coalition == nil or not self.enabled then return end
         if obj.txt == nil and obj.tts == nil then return end
-        if obj.priority == nil or obj.priority > 3 then obj.priority = 3 end
         if obj.priority == "loop" then
             self.loop.msg = obj
             return
         end
-        table.insert(self._queue[obj.priority],obj)
+        if obj.priority == nil or obj.priority > 3 or obj.priority < 0 then obj.priority = 3 end
+        if obj.priority == 0 then
+            obj.priority = 1
+            obj.push = true
+        end
+        if obj.gid and type(obj.gid) ~= "table" then
+            obj.gid = {obj.gid}
+        end
+        if obj.contactId ~= nil then
+            for id,queueObj in ipairs(self._queue[obj.priority]) do
+                if obj.gid == queueObj.gid and obj.contactId == queueObj.contactId then
+                    self._queue[obj.priority][id].txt = obj.txt
+                    self._queue[obj.priority][id].tts = obj.tts
+                    return
+                end
+            end
+        end
+        if obj.push then
+            table.insert(self._queue[obj.priority],1,obj)
+        else
+            table.insert(self._queue[obj.priority],obj)
+        end
     end
 
     --- add message to queue
     -- @int coalition coalition to transmit for
     -- @string msg Message to be added
     -- @int[opt] prio message priority in queue
-    function HoundCommsManager:addMessage(coalition,msg,prio)
+    function HOUND.Comms.Manager:addMessage(coalition,msg,prio)
         if msg == nil or coalition == nil or ( type(msg) ~= "string" and string.len(tostring(msg)) <= 0) or not self.enabled then return end
-        if prio == nil or prio > 3 then prio = 3 end
+        if prio == nil or prio > 3 or prio < 0 then prio = 3 end
 
         local obj = {
             coalition = coalition,
-            priority = prio,
-            tts = msg
+            tts = msg,
+            priority = prio
         }
-
         self:addMessageObj(obj)
     end
 
     --- add text message to queue
-    function HoundCommsManager:addTxtMsg(coalition,msg,prio)
+    function HOUND.Comms.Manager:addTxtMsg(coalition,msg,prio)
         -- TODO FIX!
         if msg == nil or string.len(tostring(msg)) == 0 or coalition == nil  or not self.enabled then return end
         if prio == nil then prio = 1 end
@@ -284,64 +318,48 @@ do
 
     --- Get next message from queue
     -- @local
-    function HoundCommsManager:getNextMsg()
+    function HOUND.Comms.Manager:getNextMsg()
         for i,v in ipairs(self._queue) do
             if #v > 0 then return table.remove(self._queue[i],1) end
         end
-    end
-
-    --- returns configured transmitter position
-    -- @local
-    -- @return DCS position of transmitter or nil if none set
-    function HoundCommsManager:getTransmitterPos()
-        if self.transmitter == nil then return nil end
-        if self.transmitter ~= nil and (self.transmitter:isExist() == false or self.transmitter:getLife() < 1) then
-            return false
-        end
-        local pos = self.transmitter:getPoint()
-        if self.transmitter:getCategory() == Object.Category.STATIC or self.transmitter:getDesc()["category"] == Unit.Category.GROUND_UNIT then
-            pos.y = pos.y + self.transmitter:getDesc()["box"]["max"]["y"] + 5
-        end
-        return pos
     end
 
     --- Trsnsmit next message from queue
     -- @local
     -- @param gSelf #Table pointer to self
     -- @return time of next queue check
-    function HoundCommsManager.TransmitFromQueue(gSelf)
+    function HOUND.Comms.Manager.TransmitFromQueue(gSelf)
         local msgObj = gSelf:getNextMsg()
         local readTime = gSelf.settings.interval
         if msgObj == nil then return timer.getTime() + readTime end
-        local transmitterPos = gSelf:getTransmitterPos()
+
+        local transmitterPos = HoundUtils.TTS.getTransmitterPos(gSelf.transmitter)
 
         if transmitterPos == false then
             env.info("[Hound] - Transmitter destroyed")
-            HoundEventHandler.publishEvent({
+            HOUND.EventHandler.publishEvent({
                     id = HOUND.EVENTS.TRANSMITTER_DESTROYED,
                     houndId = gSelf.houndConfig:getId(),
                     initiator = gSelf.sector,
                     transmitter = gSelf.transmitter
                 })
 
+            gSelf.transmitter = nil
             return timer.getTime() + 10
         end
 
-        if gSelf.enabled and STTS ~= nil and msgObj.tts ~= nil and gSelf.preferences.enabletts then
-            HoundUtils.TTS.Transmit(msgObj.tts,msgObj.coalition,gSelf.settings,transmitterPos)
-            readTime = HoundUtils.TTS.getReadTime(msgObj.tts,gSelf.settings.speed)
+        if gSelf.enabled and HoundUtils.TTS.isAvailable() and msgObj.tts ~= nil and gSelf.preferences.enabletts then
+            HoundUtils.TTS.Transmit(msgObj.tts,msgObj.coalition,gSelf.settings,gSelf.transmitter)
+            readTime = HoundUtils.TTS.getReadTime(msgObj.tts,gSelf.settings.speed,gSelf.settings.googletts)
             -- env.info("TTS msg: " .. msgObj.tts)
+
         end
 
         if gSelf.enabled and gSelf.preferences.enabletext and msgObj.txt ~= nil then
             readTime =  HoundUtils.TTS.getReadTime(msgObj.tts,gSelf.settings.speed) or HoundUtils.TTS.getReadTime(msgObj.txt,gSelf.settings.speed)
             if msgObj.gid then
-                if type(msgObj.gid) == "table" then
-                    for _,gid in ipairs(msgObj.gid) do
-                        trigger.action.outTextForGroup(gid,msgObj.txt,readTime+2)
-                    end
-                else
-                    trigger.action.outTextForGroup(msgObj.gid,msgObj.txt,readTime+2)
+                for _,gid in ipairs(msgObj.gid) do
+                    trigger.action.outTextForGroup(gid,msgObj.txt,readTime+2)
                 end
             else
                 trigger.action.outTextForCoalition(msgObj.coalition,msgObj.txt,readTime+2)
@@ -355,25 +373,25 @@ do
 
     --- start loop placeholder
     -- @local
-    function HoundCommsManager:startCallbackLoop()
-        return
+    function HOUND.Comms.Manager:startCallbackLoop()
+        return nil
     end
 
     --- stop loop placeholder
     -- @local
-    function HoundCommsManager:stopCallbackLoop()
-        return
+    function HOUND.Comms.Manager:stopCallbackLoop()
+        return nil
     end
 
     --- SetMsgCallback placeholder
     -- @local
-    function HoundCommsManager:SetMsgCallback()
-        return
+    function HOUND.Comms.Manager:SetMsgCallback()
+        return nil
     end
 
     --- run callback message scheduler placeholder
     -- @local
-    function HoundCommsManager:runCallback()
-        return
+    function HOUND.Comms.Manager:runCallback()
+        return nil
     end
 end
