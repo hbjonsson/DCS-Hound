@@ -2977,8 +2977,6 @@ do
             ['KA-27'] = { antenna = { size = 4, factor = 1 }, ins_error = 50 },
             ['C-130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 },
             ['C-130J-30'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 },
-            ['KC-135'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }, -- stand-in for RC-135 (same C-135 airframe)
-            ['KC135MPRS'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }, -- stand-in for RC-135 (same C-135 airframe)
             ['S-3B'] = { antenna = { size = 18, factor = 0.8 }, ins_error = 0 },
             ['E-3A'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0 },
             ['E-2C'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0 },

@@ -46,7 +46,7 @@ Hound rejects readings > 10° error, but lower resolution still impacts quality.
 
 **Recommendation:**
 
-- Use high-precision platforms when possible (C-130, KC-135, static towers)
+- Use high-precision platforms when possible (C-130, RC-135 mod, static towers)
 - Don't rely solely on low-resolution platforms
 - Mix high and low precision for best results
 

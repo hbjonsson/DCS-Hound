@@ -86,7 +86,7 @@ Platform accuracy depends on **antenna size** and **signal frequency**.
 
 **Antenna Size:**
 
-- Large aircraft (C-130, KC-135) = Large antennas = Better resolution
+- Large aircraft (C-130, RC-135) = Large antennas = Better resolution
 - Small aircraft (fighters) = Small antennas = Lower resolution
 - Static towers = Very large antennas = Excellent resolution
 

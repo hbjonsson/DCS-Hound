@@ -12,11 +12,11 @@ Complete list of units capable of ELINT operations in Hound.
 
 - 🥇 **TV Tower** (static) - Exceptional accuracy
 - 🥇 **C-130** - Excellent airborne platform
-- 🥇 **KC-135** - Stand-in for RC-135 (same C-135 airframe), very accurate
+- 🥇 **RC-135W** (SSS mod) - Real ELINT aircraft, very accurate
 
 **Best By Role:**
 
-- **Long-range picket:** KC-135, Tu-95
+- **Long-range picket:** RC-135W (mod), Tu-95
 - **Medium range:** C-130, An-26B
 - **Ground stations:** Comms Tower M, TV Tower, Command Center
 - **Mobile ground:** SPK-11, Patriot CR
@@ -52,8 +52,6 @@ Complete list of units capable of ELINT operations in Hound.
 | ----------- | ------------------------ | --------- | ------------------------------------- |
 | **C-130**   | 0.65° / 0.07°            | A         | Excellent all-around, common          |
 | **C-130J**  | 0.65° / 0.07°            | A         | DCS:C-130                             |
-| **KC-135**  | 0.57° / 0.06°            | A         | Best large aircraft (RC-135 stand-in) |
-| **KC-135MPRS** | 0.57° / 0.06°         | A         | Best large aircraft (RC-135 stand-in) |
 | **Tu-95**   | 0.46° / 0.05°            | A         | Excellent accuracy, large size        |
 | **Tu-142**  | 0.46° / 0.05°            | A         | Maritime patrol version of Tu-95      |
 | **An-26B**  | 0.98° / 0.10°            | A         | An-26RR/RT ELINT stand-in             |
@@ -191,7 +189,7 @@ Supported third-party aircraft:
 
 ### For Maximum Accuracy:
 
-1. **Primary:** 2-3 high-altitude large aircraft (C-130, KC-135)
+1. **Primary:** 2-3 high-altitude large aircraft (C-130, RC-135W mod)
 2. **Baseline:** 1-2 static towers on high ground
 3. **Backup:** Additional platforms for redundancy
 
@@ -222,7 +220,7 @@ Supported third-party aircraft:
 ```
 - C-130 "ELINT North" - Racetrack north at 28,000 ft
 - C-130 "ELINT South" - Racetrack south at 28,000 ft
-- KC-135 "ELINT East" - Racetrack east at 32,000 ft
+- RC-135W (mod) "ELINT East" - Racetrack east at 32,000 ft
 - TV Tower/Cooms Tower - On high terrain
 ```
 
