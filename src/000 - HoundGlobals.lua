@@ -42,6 +42,7 @@ do
     -- @field KALMAN_DEBUG If true, will print kalman filter debug info (currently not implemented, default is false)
     -- @field DF_SECTOR_DEG Width (deg) of the platform-relative aspect sector sharing one persistent DF bias (realistic DF only)
     -- @field DF_SNR_RANGE_FACTOR Multiple of emitter detection range beyond which DF noise grows linearly with range (realistic DF only)
+    -- @field DF_NAV_DRIFT_INTERVAL Seconds a platform keeps its navigation (INS) error before it is redrawn (realistic DF + platform position errors)
     -- @field DF_DEBUG If true, logs estimate error vs truth for every processed emitter (realistic DF tuning, default false)
     -- @field AUTO_ADD_PLATFORM_BY_PAYLOAD If true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
     HOUND = {
@@ -68,6 +69,7 @@ do
         KALMAN_DEBUG = false,
         DF_SECTOR_DEG = 30,
         DF_SNR_RANGE_FACTOR = 2,
+        DF_NAV_DRIFT_INTERVAL = 600,
         DF_DEBUG = false,
         AUTO_ADD_PLATFORM_BY_PAYLOAD = true, -- if true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
     }

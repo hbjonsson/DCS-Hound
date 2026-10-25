@@ -131,7 +131,7 @@ HoundInstance:enablePlatformPosErrors()
 HoundInstance:disablePlatformPosErrors()
 ```
 
-**Realistic DF error model (default off):**
+**Realistic DF error model (default on):**
 
 ```lua
 HoundInstance:enableRealisticDF()

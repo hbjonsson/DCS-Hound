@@ -452,20 +452,32 @@ do
                         local wavelength = contact:getWavelenght(isRadarTracking)
                         local sampleAngularResolution = HOUND.DB.getSensorPrecision(platform,wavelength)
                         local maxAngularResolution = l_math.rad(10.0)
-                        local noiseMaxErr, biasSigma
+                        local noiseMaxErr, biasSigma, coning
                         if realisticDF then
                             noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution,
                                 HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange))
+                            if noiseMaxErr then
+                                local psi, bodyEl = HoundUtils.Elint.getApertureGeometry(platformData.axes, platformData.pos, radarPos, platformData.apertures)
+                                if psi then
+                                    -- interferometer error ~1/cos off broadside; azimuth-only array measures sin(psi_m) = cos(el)*sin(psi)
+                                    noiseMaxErr = noiseMaxErr / l_math.cos(psi)
+                                    coning = l_math.asin(l_math.cos(bodyEl) * l_math.sin(psi)) - psi
+                                else
+                                    noiseMaxErr = nil
+                                end
+                            end
                             -- datapoint carries total error (noise + bias) as ~2 sigma
                             sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2)
                             maxAngularResolution = l_math.rad(HOUND.MAX_ANGULAR_RES_DEG)
                         end
                         if sampleAngularResolution and sampleAngularResolution < maxAngularResolution then
-                            local az,el
+                            local az,el,dfKey
                             if biasSigma then
                                 az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, noiseMaxErr )
                                 local sector = l_math.floor(((az - platformData.heading) % (2 * l_math.pi)) / l_math.rad(HOUND.DF_SECTOR_DEG))
-                                az = (az + contact:getDfBias(platform:getName(), sector, biasSigma)) % (2 * l_math.pi)
+                                local bias
+                                bias, dfKey = contact:getDfBias(platform:getName(), sector, biasSigma)
+                                az = (az + bias + coning) % (2 * l_math.pi)
                             else
                                 az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, sampleAngularResolution )
                             end
@@ -474,18 +486,42 @@ do
                             end
 
                             if not platformData.isStatic and self.settings:getPosErr() then
+                                local posErr = platformData.posErr
+                                if realisticDF then
+                                    posErr = self:getNavErr(platform:getName(), platformData.insError)
+                                end
                                 for axis,value in pairs(platformData.pos) do
-                                    platformData.pos[axis] = value + platformData.posErr[axis]
+                                    platformData.pos[axis] = value + posErr[axis]
                                 end
                             end
                             local signalStrength = HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange)
                             local datapoint = HOUND.Contact.Datapoint.New(platform,platformData.pos, az, el, signalStrength, timer.getAbsTime(),sampleAngularResolution,platformData.isStatic)
+                            datapoint.dfKey = dfKey
+                            datapoint.biasSigma = biasSigma
                             contact:AddPoint(datapoint)
                         end
                     end
                 end
             end
         end
+    end
+
+    --- Get persistent platform navigation error (realistic DF)
+    -- held per platform and redrawn every HOUND.DF_NAV_DRIFT_INTERVAL seconds instead of every sample
+    -- @local
+    -- @param platformName name of platform
+    -- @param insError platform ins_error (m)
+    -- @return position offset {x,y,z}
+    function HOUND.ElintWorker:getNavErr(platformName, insError)
+        self._navErr = self._navErr or {}
+        local now = timer.getAbsTime()
+        local nav = self._navErr[platformName]
+        if not nav or now - nav.t > HOUND.DF_NAV_DRIFT_INTERVAL then
+            nav = { vec = HoundUtils.Vector.getRandomVec2(insError), t = now }
+            nav.vec.y = 0
+            self._navErr[platformName] = nav
+        end
+        return nav.vec
     end
 
     --- Perform a sample of all emitting radars against all platforms

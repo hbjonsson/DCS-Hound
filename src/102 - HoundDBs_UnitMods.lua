@@ -7,16 +7,16 @@ do
     -- Helicopters
     HOUND.DB.Platform[Object.Category.UNIT]['UH-60L'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' }      -- community UH-69L
     -- Fixed Wing
-    HOUND.DB.Platform[Object.Category.UNIT]['EC130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' }      -- Secret Squirrel EC-130
-    HOUND.DB.Platform[Object.Category.UNIT]['RC135RJ'] = { antenna = { size = 40, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND' }    -- Secret Squirrel RC-135
-    HOUND.DB.Platform[Object.Category.UNIT]['P3C_Orion'] = { antenna = { size = 25, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' }  -- MAM P-3C_Orion
-    HOUND.DB.Platform[Object.Category.UNIT]['CLP_P8'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' }     -- CLP P-8A posidon
-    HOUND.DB.Platform[Object.Category.UNIT]['CLP_TU214R'] = { antenna = { size = 40, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND' } -- CLP TU-214R
-    HOUND.DB.Platform[Object.Category.UNIT]['EA_6B'] = { antenna = { size = 9, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 } }       --VSN EA-6B
-    HOUND.DB.Platform[Object.Category.UNIT]['EA-18G'] = { antenna = { size = 14, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 } }     --CJS EF-18G
-    HOUND.DB.Platform[Object.Category.UNIT]['Shavit'] = { antenna = { size = 30, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND' }     --IDF_Mods Shavit
-    HOUND.DB.Platform[Object.Category.UNIT]['SU22'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM' } --VinntoreZ SU-22M4 Mod
-    HOUND.DB.Platform[Object.Category.UNIT]['SU22_AI'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM' } --VinntoreZ SU-22M4 Mod
+    HOUND.DB.Platform[Object.Category.UNIT]['EC130'] = { antenna = { size = 29.8, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' }      -- Secret Squirrel EC-130
+    HOUND.DB.Platform[Object.Category.UNIT]['RC135RJ'] = { antenna = { size = 41.5, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND', ap = 'SIDE_NOSE' }    -- Secret Squirrel RC-135
+    HOUND.DB.Platform[Object.Category.UNIT]['P3C_Orion'] = { antenna = { size = 30.4, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' }  -- MAM P-3C_Orion
+    HOUND.DB.Platform[Object.Category.UNIT]['CLP_P8'] = { antenna = { size = 37.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' }     -- CLP P-8A posidon
+    HOUND.DB.Platform[Object.Category.UNIT]['CLP_TU214R'] = { antenna = { size = 46.1, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND', ap = 'SIDE' } -- CLP TU-214R
+    HOUND.DB.Platform[Object.Category.UNIT]['EA_6B'] = { antenna = { size = 9, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 }, ap = 'QUAD' }       --VSN EA-6B
+    HOUND.DB.Platform[Object.Category.UNIT]['EA-18G'] = { antenna = { size = 13.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 }, ap = 'QUAD' }     --CJS EF-18G
+    HOUND.DB.Platform[Object.Category.UNIT]['Shavit'] = { antenna = { size = 29.4, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND', ap = 'SIDE' }     --IDF_Mods Shavit
+    HOUND.DB.Platform[Object.Category.UNIT]['SU22'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM', ap = 'SIDE' } --VinntoreZ SU-22M4 Mod
+    HOUND.DB.Platform[Object.Category.UNIT]['SU22_AI'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM', ap = 'SIDE' } --VinntoreZ SU-22M4 Mod
 
 
     -- Community Radar systems

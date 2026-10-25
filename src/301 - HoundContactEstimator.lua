@@ -254,15 +254,23 @@ do
     -- Extracts position covariance (upper-left 2x2 of P) and computes ellipse parameters
     -- @local
     -- @param[opt] confidence Confidence level multiplier (default 2.45 for ~95% confidence)
+    -- @param[opt] addCov extra 2x2 position covariance {xx, zz, xz} added to P (e.g. DF bias)
     -- @return table with major, minor, theta, az, r (same format as calculateEllipse)
-    function HOUND.Contact.Estimator.UPLKF:getUncertainty(confidence)
+    function HOUND.Contact.Estimator.UPLKF:getUncertainty(confidence, addCov)
+        addCov = addCov or { xx = 0, zz = 0, xz = 0 }
+        return HOUND.Contact.Estimator.ellipseFromCov(self.P[1][1] + addCov.xx, self.P[2][2] + addCov.zz, self.P[1][2] + addCov.xz, confidence)
+    end
+
+    --- Get uncertainty ellipse from a 2x2 position covariance
+    -- @local
+    -- @param P_xx variance in x (North)
+    -- @param P_zz variance in z (East)
+    -- @param P_xz covariance x-z
+    -- @param[opt] confidence Confidence level multiplier (default 2.45 for ~95% confidence)
+    -- @return table with major, minor, theta, az, r (same format as calculateEllipse)
+    function HOUND.Contact.Estimator.ellipseFromCov(P_xx, P_zz, P_xz, confidence)
         -- Default to ~95% confidence (chi-squared with 2 DOF: sqrt(5.991) ≈ 2.45)
         local k = confidence or 2.45
-
-        -- Extract position covariance (upper-left 2x2 block)
-        local P_xx = self.P[1][1]  -- variance in x (North)
-        local P_zz = self.P[2][2]  -- variance in z (East)
-        local P_xz = self.P[1][2]  -- covariance x-z
 
         -- Eigenvalue decomposition for 2x2 symmetric matrix
         -- λ = (trace ± sqrt(trace² - 4*det)) / 2

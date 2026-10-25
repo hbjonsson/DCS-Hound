@@ -34,6 +34,7 @@ do
         KALMAN_DEBUG = false,
         DF_SECTOR_DEG = 30,
         DF_SNR_RANGE_FACTOR = 2,
+        DF_NAV_DRIFT_INTERVAL = 600,
         DF_DEBUG = false,
         AUTO_ADD_PLATFORM_BY_PAYLOAD = true, -- if true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
     }
@@ -1967,6 +1968,13 @@ do
         ["RWR"]      = { 2, 18 },    -- standard E-J band ESM/RWR (E-3 AN/AYR-1: 2-18 GHz)
     }
 
+    HOUND.DB.DfApertures = {
+        ["SIDE"] = { { az = 90, fov = 60, el = 45 }, { az = -90, fov = 60, el = 45 } },
+        ["SIDE_NOSE"] = { { az = 90, fov = 60, el = 45 }, { az = -90, fov = 60, el = 45 }, { az = 0, fov = 30, el = 45 } },
+        ["QUAD"] = { { az = 45, fov = 45, el = 45 }, { az = 135, fov = 45, el = 45 }, { az = -135, fov = 45, el = 45 }, { az = -45, fov = 45, el = 45 } },
+        ["FORWARD"] = { { az = 0, fov = 70, el = 45 } },
+    }
+
     HOUND.DB.RadarType = {
         ['NONE'] = 0x00,
         ['EWR'] = 0x01,
@@ -2987,50 +2995,50 @@ do
         [Object.Category.UNIT] = {
             ['Patriot AMG'] = { antenna = { size = 15, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
             ['SPK-11'] = { antenna = { size = 15, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['SH-60B'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'COARSE', rx = { 2, 20 } },
+            ['SH-60B'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'COARSE', rx = { 2, 20 }, ap = 'QUAD' },
             ['UH-60A'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
             ['Mi-8MT'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
             ['KA-27'] = { antenna = { size = 4, factor = 1 }, ins_error = 50, df = 'AMPLITUDE', rx = 'RWR' },
-            ['C-130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['C-130J-30'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['S-3B'] = { antenna = { size = 18, factor = 0.8 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' },
-            ['E-3A'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0, df = 'COARSE', rx = 'RWR' },
-            ['E-2C'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' },
-            ['E-2D'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' },
-            ['Tu-95MS'] = { antenna = { size = 50, factor = 1 }, ins_error = 50, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['Tu-142'] = { antenna = { size = 50, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'ESM' },
-            ['Su-24M'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 } },
-            ['Su-24MR'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'TANGAZH' } }, ins_error = 50, df = 'COARSE', rx = 'ESM' },
-            ['Su-25TM'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 } },
-            ['A-50'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0, df = 'COARSE', rx = 'ESM' },
-            ['An-26B'] = { antenna = { size = 26, factor = 1 }, ins_error = 100, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 } },
+            ['C-130'] = { antenna = { size = 29.8, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['C-130J-30'] = { antenna = { size = 34.4, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['S-3B'] = { antenna = { size = 20.9, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' },
+            ['E-3A'] = { antenna = { size = 46.6, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' },
+            ['E-2C'] = { antenna = { size = 24.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' },
+            ['E-2D'] = { antenna = { size = 24.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' },
+            ['Tu-95MS'] = { antenna = { size = 46.2, factor = 1 }, ins_error = 50, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['Tu-142'] = { antenna = { size = 50, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'ESM', ap = 'SIDE' },
+            ['Su-24M'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
+            ['Su-24MR'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'TANGAZH' } }, ins_error = 50, df = 'COARSE', rx = 'ESM', ap = 'SIDE' },
+            ['Su-25TM'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
+            ['A-50'] = { antenna = { size = 50.5, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'ESM', ap = 'QUAD' },
+            ['An-26B'] = { antenna = { size = 23.8, factor = 1 }, ins_error = 100, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
             ['AJS37'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'U22/A Jammer Pod', 'U22 Jammer' } }, ins_error = 50, df = 'AMPLITUDE', rx = 'RWR' },
-            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' },
-            ['FA-18C_hornet'] = { antenna = { size = 14, factor = 1 }, require = { Payload = { 'ais-pod-t50' } },ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 } }, -- FA-18C stand in for EA-18G, AIS-POD-T50 is standin for AN/ALQ-218
+            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'FORWARD' },
+            ['FA-18C_hornet'] = { antenna = { size = 13.6, factor = 1 }, require = { Payload = { 'ais-pod-t50' } },ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 }, ap = 'QUAD' }, -- FA-18C stand in for EA-18G, AIS-POD-T50 is standin for AN/ALQ-218
             ['JF-17'] = { antenna = { size = 3.25, factor = 1 }, require = { Payload = { 'KG-600' } }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
-            ['A6E'] = { antenna = { size = 9, factor = 1 }, require = { Payload = { 'BDU_45B' } }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 } }, -- A-6E stand in for EA-6B, BDU_45B is Standin for ALQ-99
-            ['Mirage-F1EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR' }, -- does not reflect features in actual released product
-            ['Mirage-F1M-CE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' }, -- does not reflect features in actual released product
-            ['Mirage-F1M-EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' }, -- does not reflect features in actual released product
-            ['Mirage-F1CR'] = { antenna = { size = 4, factor = 1 }, require = { Payload = { 'ASTAC_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' },           -- AI only (FAF)
-            ['Mirage-F1EQ'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR' }, -- AI only (Iraq)
-            ['Mirage-F1EDA'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR' }, -- AI only (Qatar)
+            ['A6E'] = { antenna = { size = 9, factor = 1 }, require = { Payload = { 'BDU_45B' } }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 }, ap = 'QUAD' }, -- A-6E stand in for EA-6B, BDU_45B is Standin for ALQ-99
+            ['Mirage-F1EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- does not reflect features in actual released product
+            ['Mirage-F1M-CE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- does not reflect features in actual released product
+            ['Mirage-F1M-EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- does not reflect features in actual released product
+            ['Mirage-F1CR'] = { antenna = { size = 4, factor = 1 }, require = { Payload = { 'ASTAC_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' },           -- AI only (FAF)
+            ['Mirage-F1EQ'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- AI only (Iraq)
+            ['Mirage-F1EDA'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- AI only (Qatar)
         }
     }
 end
 do
     HOUND.DB.Platform[Object.Category.UNIT]['UH-60L'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' }      -- community UH-69L
-    HOUND.DB.Platform[Object.Category.UNIT]['EC130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' }      -- Secret Squirrel EC-130
-    HOUND.DB.Platform[Object.Category.UNIT]['RC135RJ'] = { antenna = { size = 40, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND' }    -- Secret Squirrel RC-135
-    HOUND.DB.Platform[Object.Category.UNIT]['P3C_Orion'] = { antenna = { size = 25, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' }  -- MAM P-3C_Orion
-    HOUND.DB.Platform[Object.Category.UNIT]['CLP_P8'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' }     -- CLP P-8A posidon
-    HOUND.DB.Platform[Object.Category.UNIT]['CLP_TU214R'] = { antenna = { size = 40, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND' } -- CLP TU-214R
-    HOUND.DB.Platform[Object.Category.UNIT]['EA_6B'] = { antenna = { size = 9, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 } }       --VSN EA-6B
-    HOUND.DB.Platform[Object.Category.UNIT]['EA-18G'] = { antenna = { size = 14, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 } }     --CJS EF-18G
-    HOUND.DB.Platform[Object.Category.UNIT]['Shavit'] = { antenna = { size = 30, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND' }     --IDF_Mods Shavit
-    HOUND.DB.Platform[Object.Category.UNIT]['SU22'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM' } --VinntoreZ SU-22M4 Mod
-    HOUND.DB.Platform[Object.Category.UNIT]['SU22_AI'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM' } --VinntoreZ SU-22M4 Mod
+    HOUND.DB.Platform[Object.Category.UNIT]['EC130'] = { antenna = { size = 29.8, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' }      -- Secret Squirrel EC-130
+    HOUND.DB.Platform[Object.Category.UNIT]['RC135RJ'] = { antenna = { size = 41.5, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND', ap = 'SIDE_NOSE' }    -- Secret Squirrel RC-135
+    HOUND.DB.Platform[Object.Category.UNIT]['P3C_Orion'] = { antenna = { size = 30.4, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' }  -- MAM P-3C_Orion
+    HOUND.DB.Platform[Object.Category.UNIT]['CLP_P8'] = { antenna = { size = 37.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' }     -- CLP P-8A posidon
+    HOUND.DB.Platform[Object.Category.UNIT]['CLP_TU214R'] = { antenna = { size = 46.1, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND', ap = 'SIDE' } -- CLP TU-214R
+    HOUND.DB.Platform[Object.Category.UNIT]['EA_6B'] = { antenna = { size = 9, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 }, ap = 'QUAD' }       --VSN EA-6B
+    HOUND.DB.Platform[Object.Category.UNIT]['EA-18G'] = { antenna = { size = 13.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 }, ap = 'QUAD' }     --CJS EF-18G
+    HOUND.DB.Platform[Object.Category.UNIT]['Shavit'] = { antenna = { size = 29.4, factor = 1 }, ins_error = 0, df = 'PRECISION', rx = 'WIDEBAND', ap = 'SIDE' }     --IDF_Mods Shavit
+    HOUND.DB.Platform[Object.Category.UNIT]['SU22'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM', ap = 'SIDE' } --VinntoreZ SU-22M4 Mod
+    HOUND.DB.Platform[Object.Category.UNIT]['SU22_AI'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'SU22_BA52' } }, ins_error = 50, df = 'COARSE', rx = 'ESM', ap = 'SIDE' } --VinntoreZ SU-22M4 Mod
 
     HOUND.DB.Radars['S-300PS 64H6E TRAILER sr'] = {
         ['Name'] = "Big Bird",
@@ -4260,6 +4268,9 @@ do
         platformData.ApertureSize = (DbInfo.antenna.size * DbInfo.antenna.factor) or 0
         platformData.df = DbInfo.df
         platformData.rx = DbInfo.rx
+        platformData.apertures = HOUND.DB.DfApertures[DbInfo.ap or ""]
+        platformData.insError = errorDist
+        platformData.axes = pose
 
         local VerticalOffset = DbInfo.antenna.size
         local objHitBox = DcsObject:getDesc()["box"]
@@ -4444,7 +4455,7 @@ do
             detectDeadRadars = true,
             NatoBrevity = false,
             platformPosErr = false,
-            realisticDF = false,
+            realisticDF = true,
             useNatoCallsigns = false,
             AtisUpdateInterval = 180,
             AlertOnLaunch = false,
@@ -5599,6 +5610,27 @@ do
         local el = (l_math.atan(vec.y/l_math.sqrt(vec.x^2 + vec.z^2)) + AngularErr.el)
 
         return az,el,vec
+    end
+
+    function HOUND.Utils.Elint.getApertureGeometry(axes, src, dst, apertures)
+        if type(apertures) ~= "table" then return 0, 0 end
+        local vx, vy, vz = dst.x - src.x, dst.y - src.y, dst.z - src.z
+        local bx = vx * axes.x.x + vy * axes.x.y + vz * axes.x.z
+        local by = vx * axes.y.x + vy * axes.y.y + vz * axes.y.z
+        local bz = vx * axes.z.x + vy * axes.z.y + vz * axes.z.z
+        local bodyAz = l_math.atan2(bz, bx)
+        local bodyEl = l_math.atan2(by, l_math.sqrt(bx * bx + bz * bz))
+        local bestPsi
+        for _, aperture in ipairs(apertures) do
+            if l_math.abs(bodyEl) <= l_math.rad(aperture.el) then
+                local psi = (bodyAz - l_math.rad(aperture.az) + l_math.pi) % PI_2 - l_math.pi
+                if l_math.abs(psi) <= l_math.rad(aperture.fov) and (not bestPsi or l_math.abs(psi) < l_math.abs(bestPsi)) then
+                    bestPsi = psi
+                end
+            end
+        end
+        if not bestPsi then return end
+        return bestPsi, bodyEl
     end
 
     function HOUND.Utils.Elint.getSignalStrength(src, dst, maxDetection)
@@ -6893,12 +6925,13 @@ do
         end
     end
 
-    function HOUND.Contact.Estimator.UPLKF:getUncertainty(confidence)
-        local k = confidence or 2.45
+    function HOUND.Contact.Estimator.UPLKF:getUncertainty(confidence, addCov)
+        addCov = addCov or { xx = 0, zz = 0, xz = 0 }
+        return HOUND.Contact.Estimator.ellipseFromCov(self.P[1][1] + addCov.xx, self.P[2][2] + addCov.zz, self.P[1][2] + addCov.xz, confidence)
+    end
 
-        local P_xx = self.P[1][1]  -- variance in x (North)
-        local P_zz = self.P[2][2]  -- variance in z (East)
-        local P_xz = self.P[1][2]  -- covariance x-z
+    function HOUND.Contact.Estimator.ellipseFromCov(P_xx, P_zz, P_xz, confidence)
+        local k = confidence or 2.45
 
         local trace = P_xx + P_zz
         local det = P_xx * P_zz - P_xz * P_xz
@@ -7274,7 +7307,32 @@ do
         if not self._dfBias[key] then
             self._dfBias[key] = HoundUtils.Vector.getRandomVec2(2 * sigma).x
         end
-        return self._dfBias[key]
+        return self._dfBias[key], key
+    end
+
+    function HOUND.Contact.Emitter:getBiasCov()
+        if type(self._dfInfo) ~= "table" or not HoundUtils.Dcs.isPoint(self.pos.p) then return end
+        local Jxx, Jzz, Jxz, r2Max = 0, 0, 0, 0
+        local now = timer.getAbsTime()
+        for key, info in pairs(self._dfInfo) do
+            if now - info.t > HOUND.CONTACT_TIMEOUT then
+                self._dfInfo[key] = nil
+            else
+                local dx, dz = self.pos.p.x - info.x, self.pos.p.z - info.z
+                local r2 = l_math.max(dx * dx + dz * dz, 1)
+                local w = 1 / (r2 * info.sigma * info.sigma)
+                local nx, nz = -l_math.sin(info.az), l_math.cos(info.az)
+                Jxx = Jxx + w * nx * nx
+                Jzz = Jzz + w * nz * nz
+                Jxz = Jxz + w * nx * nz
+                r2Max = l_math.max(r2Max, r2)
+            end
+        end
+        if r2Max == 0 then return end
+        Jxx = Jxx + 1 / r2Max
+        Jzz = Jzz + 1 / r2Max
+        local det = Jxx * Jzz - Jxz * Jxz
+        return { xx = Jzz / det, zz = Jxx / det, xz = -Jxz / det }
     end
 
     function HOUND.Contact.Emitter:logDfTruth()
@@ -7294,6 +7352,10 @@ do
             end
         end
         self.last_seen = datapoint.t
+        if datapoint.dfKey then
+            self._dfInfo = self._dfInfo or {}
+            self._dfInfo[datapoint.dfKey] = { x = datapoint.platformPos.x, z = datapoint.platformPos.z, az = datapoint.az, sigma = datapoint.biasSigma, t = datapoint.t }
+        end
         if self.Kalman then
             self.Kalman:update(datapoint.platformPos,datapoint.az,datapoint.t,datapoint.platformPrecision)
         end
@@ -7468,7 +7530,7 @@ do
             local newContact = (self.state == HOUND.EVENTS.RADAR_NEW)
 
             self.pos.p = self.Kalman:getEstimatedPos()
-            self.uncertenty_data = self.Kalman:getUncertainty()
+            self.uncertenty_data = self.Kalman:getUncertainty(nil, self:getBiasCov())
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
 
             self:calculateExtrasPosData(self.pos)
@@ -7554,6 +7616,13 @@ do
         if #estimatePositions > 2 or (#estimatePositions > 0 and staticPlatformsOnly) then
             self.pos.p = HoundUtils.Cluster.WeightedCentroid(estimatePositions)
             self.uncertenty_data = self.calculateEllipse(estimatePositions,self.pos.p)
+            local biasCov = self:getBiasCov()
+            if biasCov then
+                local biasEllipse = HOUND.Contact.Estimator.ellipseFromCov(biasCov.xx, biasCov.zz, biasCov.xz)
+                if biasEllipse.major > self.uncertenty_data.major then
+                    self.uncertenty_data = biasEllipse
+                end
+            end
 
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
 
@@ -9346,19 +9415,30 @@ do
                         local wavelength = contact:getWavelenght(isRadarTracking)
                         local sampleAngularResolution = HOUND.DB.getSensorPrecision(platform,wavelength)
                         local maxAngularResolution = l_math.rad(10.0)
-                        local noiseMaxErr, biasSigma
+                        local noiseMaxErr, biasSigma, coning
                         if realisticDF then
                             noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution,
                                 HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange))
+                            if noiseMaxErr then
+                                local psi, bodyEl = HoundUtils.Elint.getApertureGeometry(platformData.axes, platformData.pos, radarPos, platformData.apertures)
+                                if psi then
+                                    noiseMaxErr = noiseMaxErr / l_math.cos(psi)
+                                    coning = l_math.asin(l_math.cos(bodyEl) * l_math.sin(psi)) - psi
+                                else
+                                    noiseMaxErr = nil
+                                end
+                            end
                             sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2)
                             maxAngularResolution = l_math.rad(HOUND.MAX_ANGULAR_RES_DEG)
                         end
                         if sampleAngularResolution and sampleAngularResolution < maxAngularResolution then
-                            local az,el
+                            local az,el,dfKey
                             if biasSigma then
                                 az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, noiseMaxErr )
                                 local sector = l_math.floor(((az - platformData.heading) % (2 * l_math.pi)) / l_math.rad(HOUND.DF_SECTOR_DEG))
-                                az = (az + contact:getDfBias(platform:getName(), sector, biasSigma)) % (2 * l_math.pi)
+                                local bias
+                                bias, dfKey = contact:getDfBias(platform:getName(), sector, biasSigma)
+                                az = (az + bias + coning) % (2 * l_math.pi)
                             else
                                 az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, sampleAngularResolution )
                             end
@@ -9367,18 +9447,36 @@ do
                             end
 
                             if not platformData.isStatic and self.settings:getPosErr() then
+                                local posErr = platformData.posErr
+                                if realisticDF then
+                                    posErr = self:getNavErr(platform:getName(), platformData.insError)
+                                end
                                 for axis,value in pairs(platformData.pos) do
-                                    platformData.pos[axis] = value + platformData.posErr[axis]
+                                    platformData.pos[axis] = value + posErr[axis]
                                 end
                             end
                             local signalStrength = HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange)
                             local datapoint = HOUND.Contact.Datapoint.New(platform,platformData.pos, az, el, signalStrength, timer.getAbsTime(),sampleAngularResolution,platformData.isStatic)
+                            datapoint.dfKey = dfKey
+                            datapoint.biasSigma = biasSigma
                             contact:AddPoint(datapoint)
                         end
                     end
                 end
             end
         end
+    end
+
+    function HOUND.ElintWorker:getNavErr(platformName, insError)
+        self._navErr = self._navErr or {}
+        local now = timer.getAbsTime()
+        local nav = self._navErr[platformName]
+        if not nav or now - nav.t > HOUND.DF_NAV_DRIFT_INTERVAL then
+            nav = { vec = HoundUtils.Vector.getRandomVec2(insError), t = now }
+            nav.vec.y = 0
+            self._navErr[platformName] = nav
+        end
+        return nav.vec
     end
 
     function HOUND.ElintWorker:Sniff(GroupName)
@@ -12083,4 +12181,4 @@ do
     trigger.action.outText("Hound ELINT ("..HOUND.VERSION..") is loaded.", 15)
     env.info("[Hound] - finished loading (".. HOUND.VERSION..")")
 end
--- Hound version 0.5.2-455 - Compiled on 2026-10-25 14:52
+-- Hound version 0.5.2-455 - Compiled on 2026-10-25 15:18

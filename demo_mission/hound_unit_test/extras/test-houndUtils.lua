@@ -145,6 +145,33 @@ do
         lu.assertIsNil(HOUND.DB.getDfError(nil, 0.1, 0, 1))
     end
 
+    function TestHoundUtils:TestApertureGeometry()
+        local level = { x = { x = 1, y = 0, z = 0 }, y = { x = 0, y = 1, z = 0 }, z = { x = 0, y = 0, z = 1 } } -- heading north
+        local src = { x = 0, y = 0, z = 0 }
+        local side = HOUND.DB.DfApertures.SIDE
+        -- omni: no penalty
+        local psi, el = HOUND.Utils.Elint.getApertureGeometry(level, src, { x = 1000, y = 0, z = 0 })
+        lu.assertEquals(psi, 0)
+        lu.assertEquals(el, 0)
+        -- broadside starboard
+        psi, el = HOUND.Utils.Elint.getApertureGeometry(level, src, { x = 0, y = 0, z = 100000 }, side)
+        lu.assertAlmostEquals(psi, 0, 1e-9)
+        -- 50 deg forward of broadside: inside 60 deg fov
+        psi = HOUND.Utils.Elint.getApertureGeometry(level, src, { x = math.cos(math.rad(40)) * 1e5, y = 0, z = math.sin(math.rad(40)) * 1e5 }, side)
+        lu.assertAlmostEquals(psi, math.rad(-50), 1e-6)
+        -- nose-on: SIDE is blind, SIDE_NOSE sees it
+        lu.assertIsNil(HOUND.Utils.Elint.getApertureGeometry(level, src, { x = 100000, y = 0, z = 0 }, side))
+        lu.assertAlmostEquals(HOUND.Utils.Elint.getApertureGeometry(level, src, { x = 100000, y = 0, z = 0 }, HOUND.DB.DfApertures.SIDE_NOSE), 0, 1e-9)
+        -- steep depression beyond 45 deg el limit: blind
+        lu.assertIsNil(HOUND.Utils.Elint.getApertureGeometry(level, src, { x = 0, y = -10000, z = 5000 }, side))
+        -- 30 deg right bank: starboard horizon target appears 30 deg above the body plane
+        local c, s = math.cos(math.rad(30)), math.sin(math.rad(30))
+        local bank = { x = { x = 1, y = 0, z = 0 }, y = { x = 0, y = c, z = s }, z = { x = 0, y = -s, z = c } }
+        psi, el = HOUND.Utils.Elint.getApertureGeometry(bank, src, { x = 0, y = 0, z = 100000 }, side)
+        lu.assertAlmostEquals(el, math.rad(30), 1e-6)
+        lu.assertAlmostEquals(psi, 0, 1e-6)
+    end
+
     function TestHoundUtils:TestGetControllerResponse()
         local resp = HOUND.Utils.getControllerResponse()
         lu.assertIsString(resp)

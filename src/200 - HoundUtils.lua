@@ -1275,6 +1275,35 @@ do
         return az,el,vec
     end
 
+    --- Get DF aperture geometry (realistic DF)
+    -- transforms the line of sight into the platform body frame and selects the aperture closest to boresight
+    -- @param axes platform orientation (DCS getPosition(): x forward, y up, z right)
+    -- @param src position of the platform
+    -- @param dst position of the emitter
+    -- @param[opt] apertures list of {az,fov,el} in degrees (@{HOUND.DB.DfApertures}); nil = omnidirectional
+    -- @return off-boresight angle (rad, + starboard of boresight), nil if emitter is outside every aperture
+    -- @return body-frame elevation (rad)
+    function HOUND.Utils.Elint.getApertureGeometry(axes, src, dst, apertures)
+        if type(apertures) ~= "table" then return 0, 0 end
+        local vx, vy, vz = dst.x - src.x, dst.y - src.y, dst.z - src.z
+        local bx = vx * axes.x.x + vy * axes.x.y + vz * axes.x.z
+        local by = vx * axes.y.x + vy * axes.y.y + vz * axes.y.z
+        local bz = vx * axes.z.x + vy * axes.z.y + vz * axes.z.z
+        local bodyAz = l_math.atan2(bz, bx)
+        local bodyEl = l_math.atan2(by, l_math.sqrt(bx * bx + bz * bz))
+        local bestPsi
+        for _, aperture in ipairs(apertures) do
+            if l_math.abs(bodyEl) <= l_math.rad(aperture.el) then
+                local psi = (bodyAz - l_math.rad(aperture.az) + l_math.pi) % PI_2 - l_math.pi
+                if l_math.abs(psi) <= l_math.rad(aperture.fov) and (not bestPsi or l_math.abs(psi) < l_math.abs(bestPsi)) then
+                    bestPsi = psi
+                end
+            end
+        end
+        if not bestPsi then return end
+        return bestPsi, bodyEl
+    end
+
     --- Get Signal strength of point
     -- @param src position of the source (i.e Hound platform)
     -- @param dst position of the destination (i.e emitting radar)

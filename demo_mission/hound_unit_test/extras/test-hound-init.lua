@@ -98,11 +98,11 @@ do
     end
 
     function TestHoundFunctional:Test_01_init_04_ConfigRealisticDF()
-        lu.assertIsFalse(self.houndBlue.settings:getRealisticDF())
-        lu.assertIsTrue(self.houndBlue:enableRealisticDF())
         lu.assertIsTrue(self.houndBlue.settings:getRealisticDF())
         lu.assertIsTrue(self.houndBlue:disableRealisticDF())
         lu.assertIsFalse(self.houndBlue.settings:getRealisticDF())
+        lu.assertIsTrue(self.houndBlue:enableRealisticDF())
+        lu.assertIsTrue(self.houndBlue.settings:getRealisticDF())
         lu.assertIsFalse(self.houndBlue.settings:setRealisticDF("yes"))
     end
 

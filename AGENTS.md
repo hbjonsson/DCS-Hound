@@ -91,6 +91,9 @@ Root owns repo-wide instructions, global preferences, durable workflow rules, to
 
 Durable user behavior changes → record here or in the relevant child AGENTS.md.
 
+- Realism and immersion take priority over legacy behavior and upstream parity. Legacy DF mode (`disableRealisticDF()`) is unused; changes need not preserve its accuracy.
+- ELINT output must preserve fog of war: platforms produce search areas consistent with real-world DF constraints, not pinpoint fixes.
+
 ### Testing Requirement
 
 - Every new function or functionality must include unit tests in `demo_mission/hound_unit_test/` unless testing is infeasible (e.g., depends on DCS runtime features that can't be mocked). Add tests under `demo_mission/hound_unit_test/extras/test-*.lua` following the patterns in `demo_mission/hound_unit_test/AGENTS.md`.

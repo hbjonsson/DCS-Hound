@@ -91,6 +91,9 @@ do
         platformData.ApertureSize = (DbInfo.antenna.size * DbInfo.antenna.factor) or 0
         platformData.df = DbInfo.df
         platformData.rx = DbInfo.rx
+        platformData.apertures = HOUND.DB.DfApertures[DbInfo.ap or ""]
+        platformData.insError = errorDist
+        platformData.axes = pose
 
         local VerticalOffset = DbInfo.antenna.size
         local objHitBox = DcsObject:getDesc()["box"]

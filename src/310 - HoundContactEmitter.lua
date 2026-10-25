@@ -230,13 +230,43 @@ do
     -- @param sector aspect sector index (relative bearing / HOUND.DF_SECTOR_DEG)
     -- @param sigma bias standard deviation in radians
     -- @return bias in radians
+    -- @return bias key (platformName#sector)
     function HOUND.Contact.Emitter:getDfBias(platformName, sector, sigma)
         self._dfBias = self._dfBias or {}
         local key = platformName .. "#" .. sector
         if not self._dfBias[key] then
             self._dfBias[key] = HoundUtils.Vector.getRandomVec2(2 * sigma).x
         end
-        return self._dfBias[key]
+        return self._dfBias[key], key
+    end
+
+    --- Get position covariance caused by persistent DF bias (realistic DF)
+    -- one bearing line per platform/sector (latest datapoint), weighted 1/(r*sigma)^2 across the line;
+    -- along-line uncertainty is bounded by the longest platform range
+    -- @return covariance {xx, zz, xz} in m^2, nil if no bias information
+    function HOUND.Contact.Emitter:getBiasCov()
+        if type(self._dfInfo) ~= "table" or not HoundUtils.Dcs.isPoint(self.pos.p) then return end
+        local Jxx, Jzz, Jxz, r2Max = 0, 0, 0, 0
+        local now = timer.getAbsTime()
+        for key, info in pairs(self._dfInfo) do
+            if now - info.t > HOUND.CONTACT_TIMEOUT then
+                self._dfInfo[key] = nil
+            else
+                local dx, dz = self.pos.p.x - info.x, self.pos.p.z - info.z
+                local r2 = l_math.max(dx * dx + dz * dz, 1)
+                local w = 1 / (r2 * info.sigma * info.sigma)
+                local nx, nz = -l_math.sin(info.az), l_math.cos(info.az)
+                Jxx = Jxx + w * nx * nx
+                Jzz = Jzz + w * nz * nz
+                Jxz = Jxz + w * nx * nz
+                r2Max = l_math.max(r2Max, r2)
+            end
+        end
+        if r2Max == 0 then return end
+        Jxx = Jxx + 1 / r2Max
+        Jzz = Jzz + 1 / r2Max
+        local det = Jxx * Jzz - Jxz * Jxz
+        return { xx = Jzz / det, zz = Jxx / det, xz = -Jxz / det }
     end
 
     --- log estimate error against truth (HOUND.DF_DEBUG only)
@@ -260,6 +290,10 @@ do
             end
         end
         self.last_seen = datapoint.t
+        if datapoint.dfKey then
+            self._dfInfo = self._dfInfo or {}
+            self._dfInfo[datapoint.dfKey] = { x = datapoint.platformPos.x, z = datapoint.platformPos.z, az = datapoint.az, sigma = datapoint.biasSigma, t = datapoint.t }
+        end
         if self.Kalman then
             self.Kalman:update(datapoint.platformPos,datapoint.az,datapoint.t,datapoint.platformPrecision)
         end
@@ -461,7 +495,7 @@ do
             local newContact = (self.state == HOUND.EVENTS.RADAR_NEW)
 
             self.pos.p = self.Kalman:getEstimatedPos()
-            self.uncertenty_data = self.Kalman:getUncertainty()
+            self.uncertenty_data = self.Kalman:getUncertainty(nil, self:getBiasCov())
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
 
             self:calculateExtrasPosData(self.pos)
@@ -552,6 +586,14 @@ do
             self.pos.p = HoundUtils.Cluster.WeightedCentroid(estimatePositions)
                -- Use Kalman filter uncertainty if available, otherwise use point cluster
             self.uncertenty_data = self.calculateEllipse(estimatePositions,self.pos.p)
+            local biasCov = self:getBiasCov()
+            if biasCov then
+                local biasEllipse = HOUND.Contact.Estimator.ellipseFromCov(biasCov.xx, biasCov.zz, biasCov.xz)
+                -- shortcut: cluster ellipse carries no covariance, so the larger ellipse wins instead of summing; sum covariances if the cluster path dominates in play
+                if biasEllipse.major > self.uncertenty_data.major then
+                    self.uncertenty_data = biasEllipse
+                end
+            end
 
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
 

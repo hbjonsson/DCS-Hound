@@ -1010,39 +1010,39 @@ do
             ['Patriot AMG'] = { antenna = { size = 15, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
             ['SPK-11'] = { antenna = { size = 15, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
             -- Helicopters
-            ['SH-60B'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'COARSE', rx = { 2, 20 } },
+            ['SH-60B'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'COARSE', rx = { 2, 20 }, ap = 'QUAD' },
             ['UH-60A'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
             ['Mi-8MT'] = { antenna = { size = 8, factor = 1 }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
             ['KA-27'] = { antenna = { size = 4, factor = 1 }, ins_error = 50, df = 'AMPLITUDE', rx = 'RWR' },
             -- Airplanes
-            ['C-130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['C-130J-30'] = { antenna = { size = 35, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['S-3B'] = { antenna = { size = 18, factor = 0.8 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' },
-            ['E-3A'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0, df = 'COARSE', rx = 'RWR' },
-            ['E-2C'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' },
-            ['E-2D'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM' },
-            ['Tu-95MS'] = { antenna = { size = 50, factor = 1 }, ins_error = 50, df = 'TACTICAL', rx = 'WIDEBAND' },
-            ['Tu-142'] = { antenna = { size = 50, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'ESM' },
-            ['Su-24M'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 } },
-            ['Su-24MR'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'TANGAZH' } }, ins_error = 50, df = 'COARSE', rx = 'ESM' },
-            ['Su-25TM'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 } },
-            ['A-50'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0, df = 'COARSE', rx = 'ESM' },
-            ['An-26B'] = { antenna = { size = 26, factor = 1 }, ins_error = 100, df = 'TACTICAL', rx = 'WIDEBAND' },
+            ['C-130'] = { antenna = { size = 29.8, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['C-130J-30'] = { antenna = { size = 34.4, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['S-3B'] = { antenna = { size = 20.9, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' },
+            ['E-3A'] = { antenna = { size = 46.6, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' },
+            ['E-2C'] = { antenna = { size = 24.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' },
+            ['E-2D'] = { antenna = { size = 24.6, factor = 1 }, ins_error = 0, df = 'TACTICAL', rx = 'ESM', ap = 'QUAD' },
+            ['Tu-95MS'] = { antenna = { size = 46.2, factor = 1 }, ins_error = 50, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
+            ['Tu-142'] = { antenna = { size = 50, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'ESM', ap = 'SIDE' },
+            ['Su-24M'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
+            ['Su-24MR'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'TANGAZH' } }, ins_error = 50, df = 'COARSE', rx = 'ESM', ap = 'SIDE' },
+            ['Su-25TM'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
+            ['A-50'] = { antenna = { size = 50.5, factor = 1 }, ins_error = 0, df = 'COARSE', rx = 'ESM', ap = 'QUAD' },
+            ['An-26B'] = { antenna = { size = 23.8, factor = 1 }, ins_error = 100, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
             -- Fighters
-            ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 } },
+            ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
             ['AJS37'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'U22/A Jammer Pod', 'U22 Jammer' } }, ins_error = 50, df = 'AMPLITUDE', rx = 'RWR' },
-            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' },
-            ['FA-18C_hornet'] = { antenna = { size = 14, factor = 1 }, require = { Payload = { 'ais-pod-t50' } },ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 } }, -- FA-18C stand in for EA-18G, AIS-POD-T50 is standin for AN/ALQ-218
+            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'FORWARD' },
+            ['FA-18C_hornet'] = { antenna = { size = 13.6, factor = 1 }, require = { Payload = { 'ais-pod-t50' } },ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 }, ap = 'QUAD' }, -- FA-18C stand in for EA-18G, AIS-POD-T50 is standin for AN/ALQ-218
             ['JF-17'] = { antenna = { size = 3.25, factor = 1 }, require = { Payload = { 'KG-600' } }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
-            ['A6E'] = { antenna = { size = 9, factor = 1 }, require = { Payload = { 'BDU_45B' } }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 } }, -- A-6E stand in for EA-6B, BDU_45B is Standin for ALQ-99
+            ['A6E'] = { antenna = { size = 9, factor = 1 }, require = { Payload = { 'BDU_45B' } }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 }, ap = 'QUAD' }, -- A-6E stand in for EA-6B, BDU_45B is Standin for ALQ-99
             -- Mirage F1 placeholders. Thanks Viboa and Aerges for supplying the typeNames for the module's aircrafts.
             -- ['Mirage-F1CE'] = {antenna = {size = 3.7, factor = 1}, require = {Payload={'TMV_018_Syrel_POD'}},ins_error=100}, -- temporary for intial release, CE had not INS, therefor could not do ELINT.
-            ['Mirage-F1EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR' }, -- does not reflect features in actual released product
-            ['Mirage-F1M-CE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' }, -- does not reflect features in actual released product
-            ['Mirage-F1M-EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' }, -- does not reflect features in actual released product
-            ['Mirage-F1CR'] = { antenna = { size = 4, factor = 1 }, require = { Payload = { 'ASTAC_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR' },           -- AI only (FAF)
-            ['Mirage-F1EQ'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR' }, -- AI only (Iraq)
-            ['Mirage-F1EDA'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR' }, -- AI only (Qatar)
+            ['Mirage-F1EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- does not reflect features in actual released product
+            ['Mirage-F1M-CE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- does not reflect features in actual released product
+            ['Mirage-F1M-EE'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- does not reflect features in actual released product
+            ['Mirage-F1CR'] = { antenna = { size = 4, factor = 1 }, require = { Payload = { 'ASTAC_POD' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'SIDE' },           -- AI only (FAF)
+            ['Mirage-F1EQ'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- AI only (Iraq)
+            ['Mirage-F1EDA'] = { antenna = { size = 3.7, factor = 1 }, require = { Payload = { 'TMV_018_Syrel_POD' } }, ins_error = 50, df = 'COARSE', rx = 'RWR', ap = 'SIDE' }, -- AI only (Qatar)
         }
     }
 end

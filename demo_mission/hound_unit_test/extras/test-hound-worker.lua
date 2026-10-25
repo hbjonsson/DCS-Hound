@@ -15,6 +15,21 @@ do
 
     -- Constructor & Properties
 
+    function TestHoundWorker:TestNavErr()
+        local stub = {}
+        local v1 = HOUND.ElintWorker.getNavErr(stub, "P1", 50)
+        lu.assertIsTable(v1)
+        lu.assertEquals(v1.y, 0)
+        -- held until DF_NAV_DRIFT_INTERVAL expires
+        lu.assertIs(HOUND.ElintWorker.getNavErr(stub, "P1", 50), v1)
+        stub._navErr["P1"].t = timer.getAbsTime() - HOUND.DF_NAV_DRIFT_INTERVAL - 1
+        lu.assertNotIs(HOUND.ElintWorker.getNavErr(stub, "P1", 50), v1)
+        -- zero ins_error: no offset
+        local v0 = HOUND.ElintWorker.getNavErr(stub, "P0", 0)
+        lu.assertEquals(v0.x, 0)
+        lu.assertEquals(v0.z, 0)
+    end
+
     function TestHoundWorker:TestCreate()
         lu.assertIsTable(self.worker)
         lu.assertEquals(getmetatable(self.worker), HOUND.ElintWorker)

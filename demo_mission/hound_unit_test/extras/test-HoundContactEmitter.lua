@@ -163,6 +163,35 @@ do
         lu.assertTrue(math.abs(math.sqrt(sum2 / n) - sigma) / sigma < 0.1)
     end
 
+    function TestHoundContactEmitter:TestEllipseFromCov()
+        -- sigma_x 2 m, sigma_z 1 m, uncorrelated: full axes 2*2.45*sigma
+        local e = HOUND.Contact.Estimator.ellipseFromCov(4, 1, 0)
+        lu.assertEquals(e.major, 10)
+        lu.assertEquals(e.minor, 5)
+        lu.assertAlmostEquals(e.theta, 0, 1e-9)
+        lu.assertAlmostEquals(e.r, 3.75, 1e-9)
+    end
+
+    function TestHoundContactEmitter:TestBiasCov()
+        local sigma = math.rad(1)
+        local now = timer.getAbsTime()
+        -- one platform 100 km south, bearing north: cross-range (z) ~ r*sigma, along-range (x) bounded by r
+        local stub = { pos = { p = { x = 0, y = 0, z = 0 } },
+            _dfInfo = { ["P1#0"] = { x = -100000, z = 0, az = 0, sigma = sigma, t = now } } }
+        local cov = HOUND.Contact.Emitter.getBiasCov(stub)
+        lu.assertAlmostEquals(math.sqrt(cov.zz), 100000 * sigma, 1)
+        lu.assertTrue(math.sqrt(cov.xx) > 50000)
+        -- second platform 100 km west, bearing east: both axes ~ r*sigma
+        stub._dfInfo["P2#0"] = { x = 0, z = -100000, az = math.pi / 2, sigma = sigma, t = now }
+        cov = HOUND.Contact.Emitter.getBiasCov(stub)
+        lu.assertTrue(math.abs(math.sqrt(cov.xx) / math.sqrt(cov.zz) - 1) < 0.01)
+        lu.assertTrue(math.sqrt(cov.xx) < 100000 * sigma)
+        -- stale entries are dropped
+        stub._dfInfo = { ["P1#0"] = { x = -100000, z = 0, az = 0, sigma = sigma, t = now - HOUND.CONTACT_TIMEOUT - 1 } }
+        lu.assertIsNil(HOUND.Contact.Emitter.getBiasCov(stub))
+        lu.assertIsNil(HOUND.Contact.Emitter.getBiasCov({ pos = {} }))
+    end
+
     function TestHoundContactEmitter:TestConstructorInvalid()
         lu.assertIsNil(HOUND.Contact.Emitter:New())
         lu.assertIsNil(HOUND.Contact.Emitter:New(nil,coalition.side.BLUE))

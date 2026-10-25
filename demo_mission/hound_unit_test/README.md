@@ -44,6 +44,7 @@ The **UI/Comms** batch (5) is special: it registers a `world.event` handler for 
 | `TestGetNormalAngularError` | `getNormalAngularError` returns value |
 | `TestDfError` | `HOUND.DB.getDfError`: class floor, aperture-dominated noise, range scaling (×2 at 4× detection range), AMPLITUDE fallback |
 | `TestDfErrorBandGate` | `HOUND.DB.getDfError` returns nil outside `rx` coverage; inline `{min,max}`; no `rx` = no gate |
+| `TestApertureGeometry` | `getApertureGeometry`: omni, broadside, 50° off-boresight, nose-on blind for SIDE / visible for SIDE_NOSE, depression beyond el limit, 30° bank elevation shift |
 
 **IDs, Counters, Formatting**
 
@@ -274,6 +275,8 @@ Contact model unit tests for `HOUND.Contact.Emitter` — integration tests with 
 | Method | What It Tests |
 |--------|--------------|
 | `TestDfBias` | `getDfBias` persistent per platform/sector; sample σ of 2000 sectors within 10% of requested σ |
+| `TestEllipseFromCov` | `Estimator.ellipseFromCov` full axes = 2·2.45·σ, theta 0 for uncorrelated covariance |
+| `TestBiasCov` | `getBiasCov`: one bearing line → cross-range r·σ, along-range bounded by r; two orthogonal lines → equal axes; stale entries dropped |
 | `TestConstructorInvalid` | Nil, wrong types → nil |
 | `TestEmitterTypes` | Tor, 55G6 EWR, KIROV ship, SA-5 search/track — all create valid Emitter with correct typeAssigned, isEWR, name |
 | `TestLife` | `getLife` returns positive HP and percentage ≤ 1.0 |
@@ -449,7 +452,7 @@ HoundElint instance lifecycle, singleton config, platform management. Runs in ba
 | `Test_01_init_01_BadInit` | `HoundElint:create()` with no coalition returns nil |
 | `Test_01_init_02_BlueInit` | Create BLUE instance, verify id=1, coalition, immutability, instance registry |
 | `Test_01_init_03_RedInit` | Create RED instance, verify id=2, both instances registered |
-| `Test_01_init_04_ConfigRealisticDF` | `enableRealisticDF` / `disableRealisticDF` round-trip; default off; non-boolean rejected |
+| `Test_01_init_04_ConfigRealisticDF` | `enableRealisticDF` / `disableRealisticDF` round-trip; default on; non-boolean rejected |
 | `Test_01_init_04_ConfigSingelton` | Instances have independent settings; `settings` is same object across subsystems; `setMarkerType` propagates |
 | `Test_01_init_05_HoundStartup` | `systemOn()`/`isRunning()` lifecycle |
 | `Test_01_init_06_PlatformMgmt` | `addPlatform`/`removePlatform` with validation, `listPlatforms`, `countPlatforms` |
@@ -645,6 +648,7 @@ Worker and query unit tests covering `HOUND.ElintWorker` (500) and `HOUND.ElintW
 
 | Method | What It Tests |
 |--------|--------------|
+| `TestNavErr` | `getNavErr` holds offset until `DF_NAV_DRIFT_INTERVAL` expires, then redraws; y = 0; zero `ins_error` = zero offset |
 | `TestCreate` | Valid construction, metatable, default fields |
 | `TestCreateWithId` | Instance gets unique sequential ID |
 | `TestGetNewTrackId` | `getNewTrackId` counter increments |

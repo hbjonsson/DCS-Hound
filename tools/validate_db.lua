@@ -36,9 +36,10 @@ function loadHound(path)
     -- loadfile(path..'/src/102 - HoundDBs_UnitMods.lua')()
 end
 
--- keep in sync with HOUND.DB.DfClass / HOUND.DB.RxBands (src/100 - HoundDBs.lua)
+-- keep in sync with HOUND.DB.DfClass / HOUND.DB.RxBands / HOUND.DB.DfApertures (src/100 - HoundDBs.lua)
 DF_CLASSES = { PRECISION = true, TACTICAL = true, COARSE = true, AMPLITUDE = true }
 RX_BANDS = { WIDEBAND = true, ESM = true, RWR = true }
+DF_APERTURES = { SIDE = true, SIDE_NOSE = true, QUAD = true, FORWARD = true }
 
 function getKeys(t)
     local keys = {}
@@ -91,6 +92,9 @@ function TestHoundDB:testDCSPlatforms()
             else
                 lu.assertTrue(RX_BANDS[data.rx],"rx is invalid for "..type)
             end
+            if data.ap then
+                lu.assertTrue(DF_APERTURES[data.ap],"ap is invalid for "..type)
+            end
         end
     end
 end
@@ -112,6 +116,9 @@ function TestHoundDB:TestModPlatforms()
                 lu.assertIsNumber(data.rx[2],"rx max is invalid for "..type)
             else
                 lu.assertTrue(RX_BANDS[data.rx],"rx is invalid for "..type)
+            end
+            if data.ap then
+                lu.assertTrue(DF_APERTURES[data.ap],"ap is invalid for "..type)
             end
         end
     end

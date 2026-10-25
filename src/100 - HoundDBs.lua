@@ -121,6 +121,18 @@ do
         ["RWR"]      = { 2, 18 },    -- standard E-J band ESM/RWR (E-3 AN/AYR-1: 2-18 GHz)
     }
 
+    --- DF antenna aperture presets (realistic DF)
+    -- az: boresight in degrees relative to the nose (+ starboard), fov: azimuth half-width, el: elevation half-width (body frame).
+    -- ~60 deg usable half-width for interferometers (error ~1/cos off broadside, x2 at 60 deg). Platforms without a preset are omnidirectional.
+    -- @table HOUND.DB.DfApertures
+    -- @usage ['SIDE'] = { { az = 90, fov = 60, el = 45 }, { az = -90, fov = 60, el = 45 } }
+    HOUND.DB.DfApertures = {
+        ["SIDE"] = { { az = 90, fov = 60, el = 45 }, { az = -90, fov = 60, el = 45 } },
+        ["SIDE_NOSE"] = { { az = 90, fov = 60, el = 45 }, { az = -90, fov = 60, el = 45 }, { az = 0, fov = 30, el = 45 } },
+        ["QUAD"] = { { az = 45, fov = 45, el = 45 }, { az = 135, fov = 45, el = 45 }, { az = -135, fov = 45, el = 45 }, { az = -45, fov = 45, el = 45 } },
+        ["FORWARD"] = { { az = 0, fov = 70, el = 45 } },
+    }
+
     --- Radar types ENUM
     -- @table HOUND.DB.RadarType
     -- @field Radar type in hex

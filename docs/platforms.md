@@ -51,24 +51,24 @@ Complete list of units capable of ELINT operations in Hound.
 | Platform    | C Band / H Band Accuracy | Min. Band | Notes                                 |
 | ----------- | ------------------------ | --------- | ------------------------------------- |
 | **C-130**   | 0.65° / 0.07°            | A         | Excellent all-around, common          |
-| **C-130J**  | 0.65° / 0.07°            | A         | DCS:C-130                             |
-| **Tu-95**   | 0.46° / 0.05°            | A         | Excellent accuracy, large size        |
+| **C-130J**  | 0.67° / 0.07°            | A         | DCS:C-130                             |
+| **Tu-95**   | 0.50° / 0.05°            | A         | Excellent accuracy, large size        |
 | **Tu-142**  | 0.46° / 0.05°            | A         | Maritime patrol version of Tu-95      |
-| **An-26B**  | 0.98° / 0.10°            | A         | An-26RR/RT ELINT stand-in             |
+| **An-26B**  | 0.96° / 0.10°            | A         | An-26RR/RT ELINT stand-in             |
 
 ### Medium Aircraft
 
 | Platform        | C Band / H Band Accuracy | Min. Band | Notes                         |
 | --------------- | ------------------------ | --------- | ----------------------------- |
-| **S-3B Viking** | 1.59° / 0.17°            | A         | Carrier-based ASW, good ELINT |
+| **S-3B Viking** | 1.10° / 0.12°            | A         | Carrier-based ASW, good ELINT |
 
 ### AEW / AWACS
 
 | Platform         | C Band / H Band Accuracy | Min. Band | Notes                                 |
 | ---------------- | ------------------------ | --------- | ------------------------------------- |
-| **E-2D Hawkeye** | 6.54° / 0.70°            | C         | Minimum Band C limits low-freq        |
-| **E-3A Sentry**  | 5.09° / 0.55°            | C         | Better than E-2D but still C-band min |
-| **A-50**         | 5.09° / 0.55°            | C         | Russian AWACS                         |
+| **E-2D Hawkeye** | 0.93° / 0.10°            | A         | ALQ-217 ESM, four-quadrant            |
+| **E-3A Sentry**  | 0.49° / 0.05°            | A         | Cheek-mounted ESM                     |
+| **A-50**         | 0.45° / 0.05°            | A         | Russian AWACS                         |
 
 ### Tactical Aircraft (Fighter/Attack)
 
@@ -83,7 +83,7 @@ Complete list of units capable of ELINT operations in Hound.
 | **Su-24M**         | 6.54° / 0.70°            | C         | Fantasmagoria             |
 | **Su-24MR**        | 5.09° / 0.55°            | C         | Tangazh system            |
 | **A-6E** (PlaceHolder for EA-6B) | 2.54° / 0.27°            | B         |  ALQ-167 ECM (ALQ-99 placeholder)           |
-| **F/A-18C** (Placeholder for EF-18G)        | 1.64° / 0.18°            | A         | AN/ASQ-T50 TCTS Pod - ACMI Pod (AN/ALQ-218 placeholder)  |
+| **F/A-18C** (Placeholder for EF-18G)        | 1.68° / 0.18°            | A         | AN/ASQ-T50 TCTS Pod - ACMI Pod (AN/ALQ-218 placeholder)  |
 
 
 
@@ -168,20 +168,55 @@ Supported third-party aircraft:
 
 | Platform                | C Band / H Band Accuracy | Min. Band | Notes                          |
 | ----------------------- | ------------------------ | --------- | ------------------------------ |
-| **RC-135W** (SSS)       | 0.57° / 0.06°            | A         | Real ELINT aircraft, excellent |
-| **EC-130H** (SSS)       | 0.65° / 0.07°            | A         | Compass Call variant           |
-| **P-3C Orion** (MAM)    | 0.92° / 0.10°            | A         | Maritime patrol                |
-| **P-8A Poseidon** (CLP) | 0.65° / 0.07°            | A         | Modern P-3 replacement         |
-| **TU-214R** (CLP)       | 0.57° / 0.06°            | A         | Russian recon aircraft         |
-| **Shavit** (IDF)        | 0.76° / 0.08°            | A         | Israeli ELINT                  |
-| **Anubis C-130J**       | 0.65° / 0.07°            | A         | Modern C-130                   |
-| **EF-18G** (CJS)        | 1.64° / 0.18°            | A         | Growler equivalent, excellent  |
+| **RC-135W** (SSS)       | 0.55° / 0.06°            | A         | Real ELINT aircraft, excellent |
+| **EC-130H** (SSS)       | 0.77° / 0.08°            | A         | Compass Call variant           |
+| **P-3C Orion** (MAM)    | 0.75° / 0.08°            | A         | Maritime patrol                |
+| **P-8A Poseidon** (CLP) | 0.61° / 0.07°            | A         | Modern P-3 replacement         |
+| **TU-214R** (CLP)       | 0.50° / 0.05°            | A         | Russian recon aircraft         |
+| **Shavit** (IDF)        | 0.78° / 0.08°            | A         | Israeli ELINT                  |
+| **EF-18G** (CJS)        | 1.68° / 0.18°            | A         | Growler equivalent, excellent  |
 | **EA-6B Prowler** (VSN) | 2.54° / 0.27°            | B         | Electronic warfare             |
 | **UH-60L**              | 2.86° / 0.31°            | B         | Modernized Blackhawk           |
 | **Su-22M4**             | 6.54° / 0.70°            | C         | Wyuga pod                      |
 
 
 **Note:** Requires respective mods installed. Hound will work without mods but won't detect these units.
+
+---
+
+## Realistic DF Data
+
+Used when `enableRealisticDF()` is on ([How It Works: Realistic DF](how-it-works.md#realistic-df-opt-in)). Accuracy columns above are legacy-mode values (wavelength / antenna size only).
+
+**Antenna size rule:** fuselage-side arrays: fuselage length; wingtip / quadrant systems: wingspan; pods: pod length; other entries notional.
+
+**Confidence:** **H** placement in public sources, **M** inferred from predecessor or same family, **L** notional.
+
+| Platform | DF class | Coverage (GHz) | Apertures | Size (m) | Conf. | Basis |
+|---|---|---|---|---|---|---|
+| RC-135 (`RC135RJ`) | PRECISION | 0.03-40 | SIDE_NOSE | 41.5 (length) | H sides / L nose | AEELS side-facing ELINT antennas in cheek fairings ([FAS](https://irp.fas.org/program/collect/rivet_joint.htm), [GlobalSecurity](https://www.globalsecurity.org/intell/systems/rivet_joint.htm)); thimble nose contents not public |
+| Tu-214R (`CLP_TU214R`) | PRECISION | 0.03-40 | SIDE | 46.1 (length) | H | SIGINT antenna on side fuselage aft of wing ([GlobalSecurity](https://www.globalsecurity.org/military/world/russia/tu-214r.htm)) |
+| Shavit (`Shavit`) | PRECISION | 0.03-40 | SIDE | 29.4 (G550 length) | M | ELINT arrays in radome beneath forward fuselage ([AIN](https://backend.ainonline.com/aviation-news/defense/2016-07-10/elta-offers-wide-variety-istar-solutions)) |
+| E-3A | COARSE | 2-18 | SIDE | 46.6 (length) | M | AN/AYR-1 2-18 GHz ([Armada International](https://www.armadainternational.com/2019/09/best-supporting-actor)); cheek-mounted ESM |
+| E-2C / E-2D | TACTICAL | 0.5-18 | QUAD | 24.6 (span) | H | ALQ-217: four antennas, 360 deg in low/mid/high bands ([Lockheed Martin](https://sustainability.lockheedmartin.com/content/dam/lockheed-martin/rms/documents/electronic-warfare/AN-ALQ-217-brochure.pdf)) |
+| P-3C (`P3C_Orion`) | TACTICAL | 0.5-18 | QUAD | 30.4 (span) | H | ALR-77 wingtip interferometers, 360 deg ([Military Periscope](https://militaryperiscope.com/weapons/sensorselectronics/electronic-support-measureselectronic-warfare/analr-77/overview)) |
+| P-8A (`CLP_P8`) | TACTICAL | 0.5-18 | QUAD | 37.6 (span) | L | ALQ-240 ESM; placement not public ([Aviation Today](https://www.aviationtoday.com/2012/10/04/northrop-grummans-p-8a-esm-receives-official-nomenclature/)) |
+| S-3B | TACTICAL | 0.5-18 | QUAD | 20.9 (span) | M | ALR-76 form-fit replacement for wingtip ALR-47 ([avgeekery](https://avgeekery.com/war-hoover-the-fabulously-flexible-lockheed-s-3-viking/2/)) |
+| A-50 | COARSE | 0.5-18 | QUAD | 50.5 (span) | L | No public ESM placement |
+| EA-18G / FA-18C stand-in | TACTICAL | 0.5-18 | QUAD | 13.6 (span) | M | ALQ-218 wingtip pods with low-band receivers ([Wikipedia](https://en.wikipedia.org/wiki/AN/ALQ-218), [Military Aerospace](https://www.militaryaerospace.com/home/article/55382784/navy-awards-613-million-northrop-grumman-contract-for-ea-18g-alq-218-receiver-upgrades)) |
+| EA-6B / A-6E stand-in | TACTICAL | 0.064-18 | QUAD | 9 | L | ALQ-99 receivers; notional |
+| SH-60B | COARSE | 2-20 | QUAD | 8 | M | ALQ-142 is a repurposed SLQ-32 ([Military Periscope](https://www.militaryperiscope.com/weapons/sensorselectronics/electronic-support-measureselectronic-warfare/analq-142/)) |
+| F-16C HTS | COARSE | 2-18 | FORWARD | 1.45 (pod) | L | Pod on intake side ([NMUSAF](https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196349)); forward sector from DCS testing only |
+| Su-24M / Su-25T / Su-25TM | COARSE | 1.2-11 | FORWARD | 3.5 | L | Kh-58 seeker range as proxy ([DCS forum](https://forum.dcs.world/topic/289968-no-la-launch-authorization-kh-58-on-specific-search-radars)) |
+| Su-24MR / Su-22M4 (KKR) | COARSE | 0.5-18 | SIDE | 4.5 / 3.5 | M | Tangazh antennas on pod sides ([16va.be](https://16va.be/page_su-17_kkr-1t.html)) |
+| Mirage F1 (Syrel / ASTAC) | COARSE | 2-18 | SIDE | 3.7 / 4 | L | Notional |
+| C-130 / C-130J / EC-130, An-26B, Tu-95MS | TACTICAL | 0.03-40 | SIDE | length | L | Notional stand-ins |
+| Tu-142 | COARSE | 0.5-18 | SIDE | 50 | L | Notional |
+| AJS37, JF-17 | AMPLITUDE | 2-18 | omni | pod | L | Jammer pods with cueing receivers |
+| Helicopters (UH-60A/L, Mi-8MT, Ka-27) | AMPLITUDE | 2-18 | omni | - | L | Notional |
+| Ground (towers, Command Center, Patriot AMG, SPK-11) | PRECISION / TACTICAL | 0.03-40 | omni | height | L | Notional fixed / mast stations |
+
+`ins_error` values (platform navigation error, used with `enablePlatformPosErrors()`) are notional: 0 m for GPS-aided platforms, 50-100 m for INS-only types.
 
 ---
 

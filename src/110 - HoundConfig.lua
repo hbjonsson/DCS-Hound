@@ -38,7 +38,7 @@ do
             detectDeadRadars = true,
             NatoBrevity = false,
             platformPosErr = false,
-            realisticDF = false,
+            realisticDF = true,
             useNatoCallsigns = false,
             AtisUpdateInterval = 180,
             AlertOnLaunch = false,
