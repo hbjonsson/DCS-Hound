@@ -44,6 +44,8 @@ The **UI/Comms** batch (5) is special: it registers a `world.event` handler for 
 | `TestGetNormalAngularError` | `getNormalAngularError` returns value |
 | `TestDfError` | `HOUND.DB.getDfError`: class floor, aperture-dominated noise, range scaling (×2 at 4× detection range), AMPLITUDE fallback |
 | `TestDfErrorBandGate` | `HOUND.DB.getDfError` returns nil outside `rx` coverage; inline `{min,max}`; no `rx` = no gate |
+| `TestInterceptRanges` | `getInterceptRanges`: nil without detection range; main lobe ∝ Rdet²; sensitivity scaling; sidelobe / EWR sidelobe ratios; RWR ~16 km vs SIGINT beyond horizon for a 75 km radar |
+| `TestIsInMainLobe` | `isInMainLobe`: inside / outside 2° beam, behind the radar |
 | `TestApertureGeometry` | `getApertureGeometry`: omni, broadside, 50° off-boresight, nose-on blind for SIDE / visible for SIDE_NOSE, depression beyond el limit, 30° bank elevation shift |
 
 **IDs, Counters, Formatting**
@@ -276,7 +278,10 @@ Contact model unit tests for `HOUND.Contact.Emitter` — integration tests with 
 |--------|--------------|
 | `TestDfBias` | `getDfBias` persistent per platform/sector; sample σ of 2000 sectors within 10% of requested σ |
 | `TestEllipseFromCov` | `Estimator.ellipseFromCov` full axes = 2·2.45·σ, theta 0 for uncorrelated covariance |
-| `TestBiasCov` | `getBiasCov`: one bearing line → cross-range r·σ, along-range bounded by r; two orthogonal lines → equal axes; stale entries dropped |
+| `TestBiasCov` | `getBiasCov` (cluster path): one bearing line → cross-range r·σ, no along-range term (pseudo-inverse); two orthogonal lines → both axes r·σ; stale entries dropped |
+| `TestCovFromEllipse` | `covFromEllipse` → `ellipseFromCov` round trip preserves major, minor, theta |
+| `TestKalmanTdoaFdoa` | `UPLKF:updateTdoa` / `updateFdoa`: noise-free two-ship series converges from a 3.6 km offset to < 200 m |
+| `TestKalmanBiasSens` | `UPLKF` consider sensitivities: no bias keys → nil; one key over a short baseline → cross-range σ within 0.5–2 × r·σ |
 | `TestConstructorInvalid` | Nil, wrong types → nil |
 | `TestEmitterTypes` | Tor, 55G6 EWR, KIROV ship, SA-5 search/track — all create valid Emitter with correct typeAssigned, isEWR, name |
 | `TestLife` | `getLife` returns positive HP and percentage ≤ 1.0 |

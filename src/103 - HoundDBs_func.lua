@@ -93,6 +93,7 @@ do
         platformData.rx = DbInfo.rx
         platformData.apertures = HOUND.DB.DfApertures[DbInfo.ap or ""]
         platformData.insError = errorDist
+        platformData.tdoa = DbInfo.tdoa == true
         platformData.axes = pose
 
         local VerticalOffset = DbInfo.antenna.size
@@ -185,6 +186,23 @@ do
         end
 
         return HOUND.DB.getDefraction(wavelength,HOUND.DB.getApertureSize(platform)) or l_math.rad(20.0) -- precision
+    end
+
+    --- Elint Function - Get intercept ranges (realistic DF)
+    -- one-way link budget against the radar's own two-way detection range:
+    -- Rml^2 = Rdet^4 * 4pi * Sradar / (Gt * RCS * Sesm), sidelobe range scales by 10^(SL/20)
+    -- @param detectionRange radar detection range (m) against HOUND.DF_REF_RCS
+    -- @param dfClassName platform DF class (@{HOUND.DB.DfClass} key)
+    -- @param[opt] isEWR true for early warning radars (higher sidelobes)
+    -- @return main lobe intercept range (m), nil if detection range is unknown
+    -- @return sidelobe intercept range (m)
+    function HOUND.DB.getInterceptRanges(detectionRange, dfClassName, isEWR)
+        if type(detectionRange) ~= "number" or detectionRange <= 0 then return end
+        local dfClass = HOUND.DB.DfClass[dfClassName] or HOUND.DB.DfClass.AMPLITUDE
+        local sensRatio = 10 ^ ((HOUND.DF_RADAR_SENS_DBM - dfClass.sens) / 10)
+        local mainRange = detectionRange * detectionRange * l_math.sqrt(4 * l_math.pi * sensRatio / (10 ^ (HOUND.DF_RADAR_GAIN_DBI / 10) * HOUND.DF_REF_RCS))
+        local sidelobe = isEWR and HOUND.DF_EWR_SIDELOBE_DB or HOUND.DF_SIDELOBE_DB
+        return mainRange, mainRange * 10 ^ (sidelobe / 20)
     end
 
     --- Elint Function - Get realistic DF error

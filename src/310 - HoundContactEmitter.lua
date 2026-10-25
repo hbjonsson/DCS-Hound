@@ -241,32 +241,62 @@ do
     end
 
     --- Get position covariance caused by persistent DF bias (realistic DF)
-    -- one bearing line per platform/sector (latest datapoint), weighted 1/(r*sigma)^2 across the line;
-    -- along-line uncertainty is bounded by the longest platform range
+    -- one bearing line per platform/sector (latest datapoint), weighted 1/(r*sigma)^2 across the line.
+    -- Pseudo-inverse: directions with less than 1% of the strongest information (bias lines within ~11 deg of
+    -- each other) add no bias term; uncertainty along them comes from the Kalman / cluster estimate.
     -- @return covariance {xx, zz, xz} in m^2, nil if no bias information
     function HOUND.Contact.Emitter:getBiasCov()
         if type(self._dfInfo) ~= "table" or not HoundUtils.Dcs.isPoint(self.pos.p) then return end
-        local Jxx, Jzz, Jxz, r2Max = 0, 0, 0, 0
+        local Jxx, Jzz, Jxz = 0, 0, 0
         local now = timer.getAbsTime()
         for key, info in pairs(self._dfInfo) do
             if now - info.t > HOUND.CONTACT_TIMEOUT then
                 self._dfInfo[key] = nil
             else
                 local dx, dz = self.pos.p.x - info.x, self.pos.p.z - info.z
-                local r2 = l_math.max(dx * dx + dz * dz, 1)
-                local w = 1 / (r2 * info.sigma * info.sigma)
+                local w = 1 / (l_math.max(dx * dx + dz * dz, 1) * info.sigma * info.sigma)
                 local nx, nz = -l_math.sin(info.az), l_math.cos(info.az)
                 Jxx = Jxx + w * nx * nx
                 Jzz = Jzz + w * nz * nz
                 Jxz = Jxz + w * nx * nz
-                r2Max = l_math.max(r2Max, r2)
             end
         end
-        if r2Max == 0 then return end
-        Jxx = Jxx + 1 / r2Max
-        Jzz = Jzz + 1 / r2Max
-        local det = Jxx * Jzz - Jxz * Jxz
-        return { xx = Jzz / det, zz = Jxx / det, xz = -Jxz / det }
+        local half = l_math.sqrt(((Jxx - Jzz) / 2)^2 + Jxz * Jxz)
+        local l1, l2 = (Jxx + Jzz) / 2 + half, (Jxx + Jzz) / 2 - half
+        if l1 <= 0 then return end
+        local theta = 0.5 * l_math.atan2(2 * Jxz, Jxx - Jzz)
+        local c, s = l_math.cos(theta), l_math.sin(theta)
+        local inv1 = 1 / l1
+        local inv2 = (l2 > 0.01 * l1) and (1 / l2) or 0
+        return { xx = inv1 * c * c + inv2 * s * s, zz = inv1 * s * s + inv2 * c * c, xz = (inv1 - inv2) * c * s }
+    end
+
+    --- Convert an uncertainty ellipse (full axes, ~95%) back to a 2x2 position covariance
+    -- @local
+    -- @param ellipse uncertenty_data table (major, minor, theta)
+    -- @return covariance {xx, zz, xz} in m^2
+    function HOUND.Contact.Emitter.covFromEllipse(ellipse)
+        -- shortcut: assumes the major axis lies along theta (cluster tilt direction); store both axes in calculateEllipse if minor-along-theta clusters show up
+        local sa, sb = ellipse.major / (2 * 2.45), ellipse.minor / (2 * 2.45)
+        local c, s = l_math.cos(ellipse.theta), l_math.sin(ellipse.theta)
+        return { xx = sa * sa * c * c + sb * sb * s * s, zz = sa * sa * s * s + sb * sb * c * c, xz = (sa * sa - sb * sb) * c * s }
+    end
+
+    --- Add a TDOA/FDOA measurement pair (realistic DF)
+    -- applied to the Kalman estimate only; ignored until the contact has one
+    -- @param s1 platform 1 reported position
+    -- @param v1 platform 1 velocity
+    -- @param s2 platform 2 reported position
+    -- @param v2 platform 2 velocity
+    -- @param rangeDiff measured range difference (m)
+    -- @param sigmaRange range difference sigma (m)
+    -- @param freqDiff measured Doppler difference (Hz)
+    -- @param sigmaFreq Doppler difference sigma (Hz)
+    -- @param wavelength emitter wavelength (m)
+    function HOUND.Contact.Emitter:addTdoa(s1, v1, s2, v2, rangeDiff, sigmaRange, freqDiff, sigmaFreq, wavelength)
+        if not self.Kalman then return end
+        self.Kalman:updateTdoa(s1, s2, rangeDiff, sigmaRange)
+        self.Kalman:updateFdoa(s1, v1, s2, v2, freqDiff, sigmaFreq, wavelength)
     end
 
     --- log estimate error against truth (HOUND.DF_DEBUG only)
@@ -295,7 +325,7 @@ do
             self._dfInfo[datapoint.dfKey] = { x = datapoint.platformPos.x, z = datapoint.platformPos.z, az = datapoint.az, sigma = datapoint.biasSigma, t = datapoint.t }
         end
         if self.Kalman then
-            self.Kalman:update(datapoint.platformPos,datapoint.az,datapoint.t,datapoint.platformPrecision)
+            self.Kalman:update(datapoint.platformPos,datapoint.az,datapoint.t,datapoint.platformPrecision,datapoint.dfKey,datapoint.biasSigma)
         end
         self._platforms = self._platforms or {}
         self._platforms[datapoint.platformName] = datapoint.t
@@ -495,7 +525,7 @@ do
             local newContact = (self.state == HOUND.EVENTS.RADAR_NEW)
 
             self.pos.p = self.Kalman:getEstimatedPos()
-            self.uncertenty_data = self.Kalman:getUncertainty(nil, self:getBiasCov())
+            self.uncertenty_data = self.Kalman:getUncertainty(nil, self.Kalman:getBiasCov())
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
 
             self:calculateExtrasPosData(self.pos)
@@ -588,11 +618,8 @@ do
             self.uncertenty_data = self.calculateEllipse(estimatePositions,self.pos.p)
             local biasCov = self:getBiasCov()
             if biasCov then
-                local biasEllipse = HOUND.Contact.Estimator.ellipseFromCov(biasCov.xx, biasCov.zz, biasCov.xz)
-                -- shortcut: cluster ellipse carries no covariance, so the larger ellipse wins instead of summing; sum covariances if the cluster path dominates in play
-                if biasEllipse.major > self.uncertenty_data.major then
-                    self.uncertenty_data = biasEllipse
-                end
+                local clusterCov = HOUND.Contact.Emitter.covFromEllipse(self.uncertenty_data)
+                self.uncertenty_data = HOUND.Contact.Estimator.ellipseFromCov(clusterCov.xx + biasCov.xx, clusterCov.zz + biasCov.zz, clusterCov.xz + biasCov.xz)
             end
 
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))

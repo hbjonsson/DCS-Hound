@@ -95,6 +95,9 @@ function TestHoundDB:testDCSPlatforms()
             if data.ap then
                 lu.assertTrue(DF_APERTURES[data.ap],"ap is invalid for "..type)
             end
+            if data.tdoa ~= nil then
+                lu.assertIsBoolean(data.tdoa,"tdoa is invalid for "..type)
+            end
         end
     end
 end
@@ -119,6 +122,9 @@ function TestHoundDB:TestModPlatforms()
             end
             if data.ap then
                 lu.assertTrue(DF_APERTURES[data.ap],"ap is invalid for "..type)
+            end
+            if data.tdoa ~= nil then
+                lu.assertIsBoolean(data.tdoa,"tdoa is invalid for "..type)
             end
         end
     end

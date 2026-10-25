@@ -118,17 +118,18 @@ do
         local pd = { df = 'TACTICAL', rx = 'RWR' }
         local wl = 0.03 -- 10 GHz
         -- class floor applies when aperture error is tiny
-        local noise, bias = HOUND.DB.getDfError(pd, wl, 0.0001, 4)
+        local strong = 1e6 -- (available range / distance)^2, far above threshold
+        local noise, bias = HOUND.DB.getDfError(pd, wl, 0.0001, strong)
         lu.assertAlmostEquals(noise, 2 * math.rad(0.5), 1e-9)
         lu.assertAlmostEquals(bias, math.rad(1.0), 1e-9)
         -- aperture error dominates when larger than floor
-        noise = HOUND.DB.getDfError(pd, wl, math.rad(4), 4)
+        noise = HOUND.DB.getDfError(pd, wl, math.rad(4), strong)
         lu.assertAlmostEquals(noise, math.rad(4), 1e-9)
-        -- within DF_SNR_RANGE_FACTOR x detection range: no growth
-        noise = HOUND.DB.getDfError(pd, wl, 0, 1)
+        -- at DF_SNR_RANGE_FACTOR x available range: no growth yet
+        noise = HOUND.DB.getDfError(pd, wl, 0, 1 / HOUND.DF_SNR_RANGE_FACTOR^2)
         lu.assertAlmostEquals(noise, 2 * math.rad(0.5), 1e-9)
-        -- 4 x detection range (strength 1/16), K = 2: noise doubles
-        noise = HOUND.DB.getDfError(pd, wl, 0, 1/16)
+        -- twice that distance: noise doubles
+        noise = HOUND.DB.getDfError(pd, wl, 0, 1 / (4 * HOUND.DF_SNR_RANGE_FACTOR^2))
         lu.assertAlmostEquals(noise, 4 * math.rad(0.5), 1e-9)
         -- unknown class falls back to AMPLITUDE
         noise, bias = HOUND.DB.getDfError({ rx = 'RWR' }, wl, 0, 1)
@@ -143,6 +144,32 @@ do
         lu.assertIsNumber(HOUND.DB.getDfError({ df = 'TACTICAL', rx = { 0.064, 18 } }, 2.0, 0, 1))
         lu.assertIsNumber(HOUND.DB.getDfError({ df = 'TACTICAL' }, 2.0, 0, 1)) -- no rx, no gate
         lu.assertIsNil(HOUND.DB.getDfError(nil, 0.1, 0, 1))
+    end
+
+    function TestHoundUtils:TestInterceptRanges()
+        lu.assertIsNil(HOUND.DB.getInterceptRanges(0, 'TACTICAL'))
+        local mainP, sideP = HOUND.DB.getInterceptRanges(75000, 'PRECISION')
+        local mainA, sideA = HOUND.DB.getInterceptRanges(75000, 'AMPLITUDE')
+        -- main lobe range ~ Rdet^2: doubling detection range quadruples intercept range
+        lu.assertAlmostEquals(HOUND.DB.getInterceptRanges(150000, 'PRECISION') / mainP, 4, 1e-9)
+        -- 35 dB more sensitivity: range x 10^(35/20)
+        lu.assertAlmostEquals(mainP / mainA, 10 ^ (35 / 20), 1e-6)
+        -- sidelobes at DF_SIDELOBE_DB, EWR at DF_EWR_SIDELOBE_DB
+        lu.assertAlmostEquals(sideA / mainA, 10 ^ (HOUND.DF_SIDELOBE_DB / 20), 1e-9)
+        local mainE, sideE = HOUND.DB.getInterceptRanges(75000, 'AMPLITUDE', true)
+        lu.assertAlmostEquals(sideE / mainE, 10 ^ (HOUND.DF_EWR_SIDELOBE_DB / 20), 1e-9)
+        -- RWR-class receiver hears a 75 km SAM radar's sidelobes only inside ~16 km, SIGINT far beyond the horizon
+        lu.assertTrue(sideA > 10000 and sideA < 25000)
+        lu.assertTrue(sideP > 500000)
+    end
+
+    function TestHoundUtils:TestIsInMainLobe()
+        local radar = { x = 0, y = 0, z = 0 }
+        local target = { x = 50000, y = 5000, z = 0 }
+        local bw = math.rad(2)
+        lu.assertTrue(HOUND.Utils.Elint.isInMainLobe(radar, target, { x = 80000, y = 8000, z = 500 }, bw))
+        lu.assertFalse(HOUND.Utils.Elint.isInMainLobe(radar, target, { x = 80000, y = 8000, z = 5000 }, bw))
+        lu.assertFalse(HOUND.Utils.Elint.isInMainLobe(radar, target, { x = -50000, y = 5000, z = 0 }, bw))
     end
 
     function TestHoundUtils:TestApertureGeometry()

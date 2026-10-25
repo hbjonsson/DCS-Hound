@@ -440,9 +440,11 @@ do
             if radar and radar:isExist() then
                 local radarPos = radar:getPosition().p
                 radarPos.y = radarPos.y + radar:getDesc()["box"]["max"]["y"] -- use vehicle bounting box for height
-                local _,isRadarTracking = radar:getRadar()
+                local _,radarTarget = radar:getRadar()
 
-                isRadarTracking = HoundUtils.Dcs.isUnit(isRadarTracking)
+                local isRadarTracking = HoundUtils.Dcs.isUnit(radarTarget)
+                local trackTargetPos = realisticDF and isRadarTracking and radarTarget:getPoint() or nil
+                local tdoaObs, tdoaContact = {}, nil
 
                 for _,platform in ipairs(self.platforms) do
                     local platformData = HOUND.DB.getPlatformData(platform)
@@ -454,20 +456,39 @@ do
                         local maxAngularResolution = l_math.rad(10.0)
                         local noiseMaxErr, biasSigma, coning
                         if realisticDF then
-                            noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution,
-                                HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange))
+                            -- intercept: scanning radars sweep their main lobe past the platform, tracking radars only point it at their target
+                            local signal = HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange)
+                            local mainRange, sideRange = HOUND.DB.getInterceptRanges(contact.detectionRange, platformData.df, contact.isEWR)
+                            if mainRange then
+                                local available = mainRange
+                                if trackTargetPos and not HoundUtils.Elint.isInMainLobe(radarPos, trackTargetPos, platformData.pos, l_math.rad(HOUND.DF_TRACK_BEAMWIDTH_DEG)) then
+                                    available = sideRange
+                                end
+                                local dx, dy, dz = radarPos.x - platformData.pos.x, radarPos.y - platformData.pos.y, radarPos.z - platformData.pos.z
+                                local dist = l_math.max(l_math.sqrt(dx * dx + dy * dy + dz * dz), 1)
+                                signal = dist <= available and (available / dist)^2 or nil
+                            end
+                            if signal then
+                                noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution, signal)
+                            end
                             if noiseMaxErr then
                                 local psi, bodyEl = HoundUtils.Elint.getApertureGeometry(platformData.axes, platformData.pos, radarPos, platformData.apertures)
                                 if psi then
                                     -- interferometer error ~1/cos off broadside; azimuth-only array measures sin(psi_m) = cos(el)*sin(psi)
                                     noiseMaxErr = noiseMaxErr / l_math.cos(psi)
-                                    coning = l_math.asin(l_math.cos(bodyEl) * l_math.sin(psi)) - psi
+                                    -- coning is corrected with the elevation to the current estimate; only the residual remains
+                                    local correctionEl = 0
+                                    if HoundUtils.Dcs.isPoint(contact.pos.p) then
+                                        local _, estEl = HoundUtils.Elint.getBodyAngles(platformData.axes, platformData.pos, contact.pos.p)
+                                        correctionEl = estEl
+                                    end
+                                    coning = l_math.asin(l_math.cos(bodyEl) * l_math.sin(psi)) - l_math.asin(l_math.cos(correctionEl) * l_math.sin(psi))
                                 else
                                     noiseMaxErr = nil
                                 end
                             end
-                            -- datapoint carries total error (noise + bias) as ~2 sigma
-                            sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2)
+                            -- datapoint carries total error (noise + bias + coning residual) as ~2 sigma
+                            sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2 + coning^2)
                             maxAngularResolution = l_math.rad(HOUND.MAX_ANGULAR_RES_DEG)
                         end
                         if sampleAngularResolution and sampleAngularResolution < maxAngularResolution then
@@ -485,6 +506,7 @@ do
                                 el = nil
                             end
 
+                            local truePos = { x = platformData.pos.x, y = platformData.pos.y, z = platformData.pos.z }
                             if not platformData.isStatic and self.settings:getPosErr() then
                                 local posErr = platformData.posErr
                                 if realisticDF then
@@ -499,9 +521,42 @@ do
                             datapoint.dfKey = dfKey
                             datapoint.biasSigma = biasSigma
                             contact:AddPoint(datapoint)
+                            if biasSigma and platformData.tdoa then
+                                tdoaObs[#tdoaObs + 1] = { truePos = truePos, pos = platformData.pos, vel = platform:getVelocity() }
+                                tdoaContact = contact
+                            end
                         end
                     end
                 end
+                if #tdoaObs > 1 then
+                    self:_sampleTdoa(tdoaContact, tdoaObs, radarPos, tdoaContact:getWavelenght(isRadarTracking))
+                end
+            end
+        end
+    end
+
+    --- internal: generate TDOA/FDOA measurements for every pair of TDOA-capable platforms that intercepted the same emitter
+    -- @local
+    -- @param contact emitter contact
+    -- @param observations list of {truePos, pos (reported, with nav error), vel}
+    -- @param radarPos emitter position
+    -- @param wavelength emitter wavelength (m)
+    function HOUND.ElintWorker:_sampleTdoa(contact, observations, radarPos, wavelength)
+        local sigmaRange = HOUND.TDOA_SIGMA_NS * 1e-9 * 299792458 * l_math.sqrt(2)
+        local function geometry(obs)
+            local dx, dy, dz = radarPos.x - obs.truePos.x, radarPos.y - obs.truePos.y, radarPos.z - obs.truePos.z
+            local r = l_math.sqrt(dx * dx + dy * dy + dz * dz)
+            return r, (obs.vel.x * dx + obs.vel.y * dy + obs.vel.z * dz) / r
+        end
+        for i = 1, #observations - 1 do
+            for j = i + 1, #observations do
+                local a, b = observations[i], observations[j]
+                local rA, vuA = geometry(a)
+                local rB, vuB = geometry(b)
+                local rangeDiff = rA - rB + HoundUtils.Vector.getRandomVec2(2 * sigmaRange).x
+                local freqDiff = (vuA - vuB) / wavelength + HoundUtils.Vector.getRandomVec2(2 * HOUND.FDOA_SIGMA_HZ).x
+                -- filter sigmas x2: EKF linearisation margin (keeps the 95% ellipse consistent in Monte Carlo)
+                contact:addTdoa(a.pos, a.vel, b.pos, b.vel, rangeDiff, 2 * sigmaRange, freqDiff, 2 * HOUND.FDOA_SIGMA_HZ, wavelength)
             end
         end
     end

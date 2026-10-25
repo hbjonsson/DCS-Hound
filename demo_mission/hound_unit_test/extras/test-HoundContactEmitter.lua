@@ -175,21 +175,64 @@ do
     function TestHoundContactEmitter:TestBiasCov()
         local sigma = math.rad(1)
         local now = timer.getAbsTime()
-        -- one platform 100 km south, bearing north: cross-range (z) ~ r*sigma, along-range (x) bounded by r
+        -- one platform 100 km south, bearing north: cross-range (z) = r*sigma, no along-range (x) bias term
         local stub = { pos = { p = { x = 0, y = 0, z = 0 } },
             _dfInfo = { ["P1#0"] = { x = -100000, z = 0, az = 0, sigma = sigma, t = now } } }
         local cov = HOUND.Contact.Emitter.getBiasCov(stub)
         lu.assertAlmostEquals(math.sqrt(cov.zz), 100000 * sigma, 1)
-        lu.assertTrue(math.sqrt(cov.xx) > 50000)
-        -- second platform 100 km west, bearing east: both axes ~ r*sigma
+        lu.assertTrue(math.sqrt(cov.xx) < 1)
+        -- second platform 100 km west, bearing east: both axes = r*sigma
         stub._dfInfo["P2#0"] = { x = 0, z = -100000, az = math.pi / 2, sigma = sigma, t = now }
         cov = HOUND.Contact.Emitter.getBiasCov(stub)
-        lu.assertTrue(math.abs(math.sqrt(cov.xx) / math.sqrt(cov.zz) - 1) < 0.01)
-        lu.assertTrue(math.sqrt(cov.xx) < 100000 * sigma)
+        lu.assertAlmostEquals(math.sqrt(cov.xx), 100000 * sigma, 1)
+        lu.assertAlmostEquals(math.sqrt(cov.zz), 100000 * sigma, 1)
         -- stale entries are dropped
         stub._dfInfo = { ["P1#0"] = { x = -100000, z = 0, az = 0, sigma = sigma, t = now - HOUND.CONTACT_TIMEOUT - 1 } }
         lu.assertIsNil(HOUND.Contact.Emitter.getBiasCov(stub))
         lu.assertIsNil(HOUND.Contact.Emitter.getBiasCov({ pos = {} }))
+    end
+
+    function TestHoundContactEmitter:TestCovFromEllipse()
+        local e = HOUND.Contact.Estimator.ellipseFromCov(9e6, 1e6, 2e6)
+        local cov = HOUND.Contact.Emitter.covFromEllipse(e)
+        local e2 = HOUND.Contact.Estimator.ellipseFromCov(cov.xx, cov.zz, cov.xz)
+        lu.assertTrue(math.abs(e2.major - e.major) <= 1)
+        lu.assertTrue(math.abs(e2.minor - e.minor) <= 1)
+        lu.assertAlmostEquals(e2.theta, e.theta, 1e-6)
+    end
+
+    function TestHoundContactEmitter:TestKalmanBiasSens()
+        local kf = HOUND.Contact.Estimator.UPLKF:create({ x = 2000, z = 1000 }, nil, 0, 5000, false)
+        lu.assertIsNil(kf:getBiasCov())
+        local sigma = math.rad(1)
+        -- platform 100 km south flying east, one bias key
+        for i = 0, 20 do
+            local p0 = { x = -100000, y = 9000, z = -10000 + i * 1000 }
+            kf:update(p0, math.atan2(0 - p0.z, 0 - p0.x) % (2 * math.pi), i * 10, math.rad(1), "P1#3", sigma)
+        end
+        local cov = kf:getBiasCov()
+        lu.assertIsTable(cov)
+        -- common bias over a short baseline shifts the fix across the bearing: cross-range (z) ~ r*sigma
+        lu.assertTrue(math.sqrt(cov.zz) > 0.5 * 100000 * sigma)
+        lu.assertTrue(math.sqrt(cov.zz) < 2 * 100000 * sigma)
+    end
+
+    function TestHoundContactEmitter:TestKalmanTdoaFdoa()
+        local truth = { x = 0, y = 0, z = 0 }
+        local kf = HOUND.Contact.Estimator.UPLKF:create({ x = 3000, z = -2000 }, nil, 0, 5000, false)
+        local function dist(a, b) return math.sqrt((a.x - b.x)^2 + (a.y - b.y)^2 + (a.z - b.z)^2) end
+        local v = { x = 0, y = 0, z = 250 }
+        local wl = 0.05
+        -- two-ship 20 km apart, 40 km south, flying east; noise-free measurements
+        for i = 0, 30 do
+            local s1 = { x = -40000, y = 8000, z = -10000 + i * 2500 }
+            local s2 = { x = -40000, y = 8000, z = 10000 + i * 2500 }
+            kf:updateTdoa(s1, s2, dist(truth, s1) - dist(truth, s2), 20)
+            local function vu(s) return (v.x * (truth.x - s.x) + v.y * (truth.y - s.y) + v.z * (truth.z - s.z)) / dist(truth, s) end
+            kf:updateFdoa(s1, v, s2, v, (vu(s1) - vu(s2)) / wl, 10, wl)
+        end
+        local est = kf:getEstimatedPos()
+        lu.assertTrue(math.sqrt(est.x^2 + est.z^2) < 200)
     end
 
     function TestHoundContactEmitter:TestConstructorInvalid()

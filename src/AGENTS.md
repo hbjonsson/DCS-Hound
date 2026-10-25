@@ -37,7 +37,9 @@ This subtree owns all Lua source files that compose the HoundElint system. The n
 - `Contact.Base` position data (`pos.LL`, `pos.grid`, `pos.be`) is lazily derived from `pos.p`; `hasPosData()`/`ensurePosData()` gate functions that concatenate grid/BE strings
 - `ensurePosData()` recomputes `pos.LL` from `pos.p` when either `lat` or `lon` is absent (partial LL values are not trusted)
 - `Emitter._dfBias[platformName#sector]` — persistent DF bias (radians), realistic DF only; drawn once, never cleared
-- `Emitter._dfInfo[platformName#sector]` — latest bearing line per bias key `{x, z, az, sigma, t}`; feeds `getBiasCov()`; entries older than `CONTACT_TIMEOUT` are dropped
+- `Emitter._dfInfo[platformName#sector]` — latest bearing line per bias key `{x, z, az, sigma, t}`; feeds `Emitter:getBiasCov()` (cluster path, pseudo-inverse); entries older than `CONTACT_TIMEOUT` are dropped
+- `UPLKF.biasSens[platformName#sector]` — Schmidt-Kalman consider sensitivities (d state / d bias, 4 values + `sigma`); `UPLKF:getBiasCov()` adds their covariance to the Kalman ellipse; every measurement update (bearing, TDOA, FDOA) must pass through `applyGainToBiasSens`
+- TDOA/FDOA measurements apply to `Emitter.Kalman` only (`Emitter:addTdoa`); contacts without a Kalman estimate ignore them
 - `ElintWorker._navErr[platformName]` — persistent platform position offset `{vec, t}`, redrawn after `DF_NAV_DRIFT_INTERVAL`
 - `HOUND.DB.Platform` entries carry `df` (`HOUND.DB.DfClass` key), `rx` (`HOUND.DB.RxBands` key or `{minGHz,maxGHz}`) and optional `ap` (`HOUND.DB.DfApertures` key, absent = omnidirectional); all keys must also be listed in `tools/validate_db.lua`
 

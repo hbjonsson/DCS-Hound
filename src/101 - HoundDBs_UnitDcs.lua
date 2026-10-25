@@ -995,7 +995,7 @@ do
     }
     --- Valid platform parameters
     -- @table HOUND.DB.Platform
-    -- @field UnitTypeName contains table of properties: antenna, ins_error, df (@{HOUND.DB.DfClass} key), rx (@{HOUND.DB.RxBands} key or {minGHz,maxGHz})
+    -- @field UnitTypeName contains table of properties: antenna, ins_error, df (@{HOUND.DB.DfClass} key), rx (@{HOUND.DB.RxBands} key or {minGHz,maxGHz}), ap (@{HOUND.DB.DfApertures} key), tdoa (pairs with other tdoa platforms for TDOA/FDOA)
     -- @usage ['C-130'] = {antenna = {size = 35, factor = 1}, ins_error = 0, df = 'TACTICAL', rx = 'WIDEBAND'}
 
     HOUND.DB.Platform = {
@@ -1031,7 +1031,7 @@ do
             -- Fighters
             ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
             ['AJS37'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'U22/A Jammer Pod', 'U22 Jammer' } }, ins_error = 50, df = 'AMPLITUDE', rx = 'RWR' },
-            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'FORWARD' },
+            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'FORWARD', tdoa = true }, -- tdoa: multi-ship HTS (owner input)
             ['FA-18C_hornet'] = { antenna = { size = 13.6, factor = 1 }, require = { Payload = { 'ais-pod-t50' } },ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 }, ap = 'QUAD' }, -- FA-18C stand in for EA-18G, AIS-POD-T50 is standin for AN/ALQ-218
             ['JF-17'] = { antenna = { size = 3.25, factor = 1 }, require = { Payload = { 'KG-600' } }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
             ['A6E'] = { antenna = { size = 9, factor = 1 }, require = { Payload = { 'BDU_45B' } }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 }, ap = 'QUAD' }, -- A-6E stand in for EA-6B, BDU_45B is Standin for ALQ-99

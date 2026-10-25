@@ -206,7 +206,7 @@ Used when `enableRealisticDF()` is on ([How It Works: Realistic DF](how-it-works
 | EA-18G / FA-18C stand-in | TACTICAL | 0.5-18 | QUAD | 13.6 (span) | M | ALQ-218 wingtip pods with low-band receivers ([Wikipedia](https://en.wikipedia.org/wiki/AN/ALQ-218), [Military Aerospace](https://www.militaryaerospace.com/home/article/55382784/navy-awards-613-million-northrop-grumman-contract-for-ea-18g-alq-218-receiver-upgrades)) |
 | EA-6B / A-6E stand-in | TACTICAL | 0.064-18 | QUAD | 9 | L | ALQ-99 receivers; notional |
 | SH-60B | COARSE | 2-20 | QUAD | 8 | M | ALQ-142 is a repurposed SLQ-32 ([Military Periscope](https://www.militaryperiscope.com/weapons/sensorselectronics/electronic-support-measureselectronic-warfare/analq-142/)) |
-| F-16C HTS | COARSE | 2-18 | FORWARD | 1.45 (pod) | L | Pod on intake side ([NMUSAF](https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196349)); forward sector from DCS testing only |
+| F-16C HTS | COARSE, TDOA/FDOA | 2-18 | FORWARD | 1.45 (pod) | L | Pod on intake side ([NMUSAF](https://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196349)); forward sector from DCS testing only; multi-ship TDOA per owner input |
 | Su-24M / Su-25T / Su-25TM | COARSE | 1.2-11 | FORWARD | 3.5 | L | Kh-58 seeker range as proxy ([DCS forum](https://forum.dcs.world/topic/289968-no-la-launch-authorization-kh-58-on-specific-search-radars)) |
 | Su-24MR / Su-22M4 (KKR) | COARSE | 0.5-18 | SIDE | 4.5 / 3.5 | M | Tangazh antennas on pod sides ([16va.be](https://16va.be/page_su-17_kkr-1t.html)) |
 | Mirage F1 (Syrel / ASTAC) | COARSE | 2-18 | SIDE | 3.7 / 4 | L | Notional |

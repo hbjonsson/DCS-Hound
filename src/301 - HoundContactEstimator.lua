@@ -403,6 +403,33 @@ do
 
         -- predict state
         self.state, self.P = self:predictStep(self.state, self.P, deltaT)
+        self:propagateBiasSens(deltaT)
+    end
+
+    --- propagate bias sensitivities through the constant velocity model
+    -- @local
+    -- @param deltaT time step in seconds
+    function HOUND.Contact.Estimator.UPLKF:propagateBiasSens(deltaT)
+        if not self.biasSens then return end
+        for _, sens in pairs(self.biasSens) do
+            sens[1] = sens[1] + deltaT * sens[3]
+            sens[2] = sens[2] + deltaT * sens[4]
+        end
+    end
+
+    --- position covariance caused by unestimated DF biases (Schmidt-Kalman consider covariance)
+    -- @local
+    -- @return covariance {xx, zz, xz} in m^2, nil if no bias keys were consumed
+    function HOUND.Contact.Estimator.UPLKF:getBiasCov()
+        if not self.biasSens then return end
+        local xx, zz, xz = 0, 0, 0
+        for _, sens in pairs(self.biasSens) do
+            local var = sens.sigma * sens.sigma
+            xx = xx + var * sens[1] * sens[1]
+            zz = zz + var * sens[2] * sens[2]
+            xz = xz + var * sens[1] * sens[2]
+        end
+        return { xx = xx, zz = zz, xz = xz }
     end
 
     --- perform update of state with mesurment
@@ -411,7 +438,9 @@ do
     -- @param[type=number] z current mesurment
     -- @param[type=number] timestamp time of mesurment
     -- @param[type=number] z_err maximum error in mesurment (radians)
-    function HOUND.Contact.Estimator.UPLKF:update(p0, z, timestamp, z_err)
+    -- @param[type=?string] biasKey DF bias key of the measurement (realistic DF), tracked as a consider parameter
+    -- @param[type=?number] biasSigma DF bias standard deviation (radians)
+    function HOUND.Contact.Estimator.UPLKF:update(p0, z, timestamp, z_err, biasKey, biasSigma)
         timestamp = timestamp or timer.getAbsTime()
         local deltaT = timestamp - self.t0
 
@@ -428,6 +457,7 @@ do
             self.t0 = timestamp  -- only update time reference for significant time steps
             local Q = self:getQ(deltaT)
             x_hat, P_k = self:predictStep(self.state, self.P, deltaT, Q)
+            self:propagateBiasSens(deltaT)
         end
 
         local estimatedPos = self:getEstimatedPos(x_hat)
@@ -444,6 +474,7 @@ do
         -- This is the projection of (target - sensor) vector onto the bearing direction
         -- In DCS: x = North, z = East; s = sensor (p0), p̂ = estimated target
         local m_k = cos_beta_k * (estimatedPos.x - p0.x) + sin_beta_k * (estimatedPos.z - p0.z)
+        local m_raw = m_k
 
         -- Safeguard against m_k approaching zero (would cause numerical instability)
         -- Use a soft clamp to avoid discontinuities around the threshold
@@ -478,6 +509,17 @@ do
         self.state = x_hat + (K_k * y_k)
         self.P = (matrix(4, "I") - K_k * H_k) * P_k
 
+        -- consider sensitivities: plus K * dy/dbias for this measurement's bias (dy/dbeta = -m_raw / m_k)
+        self:applyGainToBiasSens(K_k, H_k)
+        if biasKey then
+            self.biasSens = self.biasSens or {}
+            local sens = self.biasSens[biasKey] or { 0, 0, 0, 0 }
+            local g = -m_raw / m_k
+            for i = 1, 4 do sens[i] = sens[i] + K_k[i][1] * g end
+            sens.sigma = biasSigma
+            self.biasSens[biasKey] = sens
+        end
+
         -- Clamp final velocities to 30 m/s
         self.state[3][1] = HoundUtils.Mapping.clamp(self.state[3][1], -30.0, 30.0)
         self.state[4][1] = HoundUtils.Mapping.clamp(self.state[4][1], -30.0, 30.0)
@@ -485,6 +527,74 @@ do
         if HOUND.KALMAN_DEBUG and HOUND.DEBUG then
             self:updateMarker()
         end
+    end
+
+    --- apply a measurement update to the bias sensitivities: S = (I - K H) S
+    -- @local
+    -- @param K_k Kalman gain (4x1 matrix)
+    -- @param H_k measurement matrix (1x4 matrix, position terms only)
+    function HOUND.Contact.Estimator.UPLKF:applyGainToBiasSens(K_k, H_k)
+        if not self.biasSens then return end
+        local h1, h2 = H_k[1][1], H_k[1][2]
+        for _, sens in pairs(self.biasSens) do
+            local hs = h1 * sens[1] + h2 * sens[2]
+            for i = 1, 4 do sens[i] = sens[i] - K_k[i][1] * hs end
+        end
+    end
+
+    --- scalar EKF update on the position state
+    -- @local
+    -- @param h1 d(measurement)/dx
+    -- @param h2 d(measurement)/dz
+    -- @param innovation measured - predicted
+    -- @param variance measurement variance
+    function HOUND.Contact.Estimator.UPLKF:scalarUpdate(h1, h2, innovation, variance)
+        local H_k = matrix({ { h1, h2, 0, 0 } })
+        local S_k = H_k * self.P * H_k:transpose() + matrix({ { variance } })
+        local K_k = self.P * H_k:transpose() * S_k:invert()
+        self.state = self.state + K_k * matrix({ { innovation } })
+        self.P = (matrix(4, "I") - K_k * H_k) * self.P
+        self:applyGainToBiasSens(K_k, H_k)
+        self.state[3][1] = HoundUtils.Mapping.clamp(self.state[3][1], -30.0, 30.0)
+        self.state[4][1] = HoundUtils.Mapping.clamp(self.state[4][1], -30.0, 30.0)
+    end
+
+    --- TDOA update: measured range difference |e - s1| - |e - s2|
+    -- @param s1 platform 1 position (DCS point)
+    -- @param s2 platform 2 position (DCS point)
+    -- @param rangeDiff measured range difference (m)
+    -- @param sigma measurement standard deviation (m)
+    function HOUND.Contact.Estimator.UPLKF:updateTdoa(s1, s2, rangeDiff, sigma)
+        local p = self:getEstimatedPos()
+        if not p then return end
+        local d1x, d1y, d1z = p.x - s1.x, p.y - s1.y, p.z - s1.z
+        local d2x, d2y, d2z = p.x - s2.x, p.y - s2.y, p.z - s2.z
+        local r1 = l_math.max(l_math.sqrt(d1x * d1x + d1y * d1y + d1z * d1z), 1)
+        local r2 = l_math.max(l_math.sqrt(d2x * d2x + d2y * d2y + d2z * d2z), 1)
+        self:scalarUpdate(d1x / r1 - d2x / r2, d1z / r1 - d2z / r2, rangeDiff - (r1 - r2), sigma * sigma)
+    end
+
+    --- FDOA update: measured Doppler difference (v1.u1 - v2.u2) / wavelength, u = unit vector platform to emitter
+    -- @param s1 platform 1 position (DCS point)
+    -- @param v1 platform 1 velocity (DCS vec3)
+    -- @param s2 platform 2 position (DCS point)
+    -- @param v2 platform 2 velocity (DCS vec3)
+    -- @param freqDiff measured frequency difference (Hz)
+    -- @param sigma measurement standard deviation (Hz)
+    -- @param wavelength emitter wavelength (m)
+    function HOUND.Contact.Estimator.UPLKF:updateFdoa(s1, v1, s2, v2, freqDiff, sigma, wavelength)
+        local p = self:getEstimatedPos()
+        if not p then return end
+        local function term(s, v)
+            local dx, dy, dz = p.x - s.x, p.y - s.y, p.z - s.z
+            local r = l_math.max(l_math.sqrt(dx * dx + dy * dy + dz * dz), 1)
+            local vu = (v.x * dx + v.y * dy + v.z * dz) / r
+            -- d(v.u)/dp = (v - (v.u) u) / r
+            return vu, (v.x - vu * dx / r) / r, (v.z - vu * dz / r) / r
+        end
+        local f1, g1x, g1z = term(s1, v1)
+        local f2, g2x, g2z = term(s2, v2)
+        self:scalarUpdate((g1x - g2x) / wavelength, (g1z - g2z) / wavelength, freqDiff - (f1 - f2) / wavelength, sigma * sigma)
     end
 
     setmetatable(HOUND.Contact.Estimator.UPLKF,

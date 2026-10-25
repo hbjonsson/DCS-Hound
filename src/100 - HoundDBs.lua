@@ -100,15 +100,16 @@ do
     }
 
     --- DF technique classes (realistic DF)
-    -- 1 sigma values in degrees. bias is drawn once per platform/emitter/aspect sector, floor is the minimum per-sample noise.
+    -- bias / floor: 1 sigma degrees. bias is drawn once per platform/emitter/aspect sector, floor is the minimum per-sample noise.
     -- Ranges from US 6,061,022 (amplitude comparison ~10 deg, interferometer <0.5-1 deg) and operational ESM figures (0.5-2 deg).
+    -- sens: receiver sensitivity in dBm (crystal video RWR ~-60, channelized ESM ~-80, superheterodyne SIGINT ~-95; notional).
     -- @table HOUND.DB.DfClass
-    -- @usage ['TACTICAL'] = { bias = 1.0, floor = 0.5 }
+    -- @usage ['TACTICAL'] = { bias = 1.0, floor = 0.5, sens = -80 }
     HOUND.DB.DfClass = {
-        ["PRECISION"] = { bias = 0.5, floor = 0.2 }, -- dedicated SIGINT interferometers
-        ["TACTICAL"]  = { bias = 1.0, floor = 0.5 }, -- tactical / MPA / AEW interferometers
-        ["COARSE"]    = { bias = 2.5, floor = 1.0 }, -- targeting pods, hybrid amplitude/phase
-        ["AMPLITUDE"] = { bias = 6.0, floor = 3.0 }, -- amplitude comparison RWR-class receivers
+        ["PRECISION"] = { bias = 0.5, floor = 0.2, sens = -95 }, -- dedicated SIGINT interferometers
+        ["TACTICAL"]  = { bias = 1.0, floor = 0.5, sens = -80 }, -- tactical / MPA / AEW interferometers
+        ["COARSE"]    = { bias = 2.5, floor = 1.0, sens = -70 }, -- targeting pods, hybrid amplitude/phase
+        ["AMPLITUDE"] = { bias = 6.0, floor = 3.0, sens = -60 }, -- amplitude comparison RWR-class receivers
     }
 
     --- Receiver frequency coverage presets (realistic DF)

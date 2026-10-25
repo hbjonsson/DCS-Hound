@@ -41,7 +41,15 @@ do
     -- @field REF_DIST Reference distance for contact scoring. Used to calculate the weight of datap
     -- @field KALMAN_DEBUG If true, will print kalman filter debug info (currently not implemented, default is false)
     -- @field DF_SECTOR_DEG Width (deg) of the platform-relative aspect sector sharing one persistent DF bias (realistic DF only)
-    -- @field DF_SNR_RANGE_FACTOR Multiple of emitter detection range beyond which DF noise grows linearly with range (realistic DF only)
+    -- @field DF_SNR_RANGE_FACTOR Fraction of the available intercept range beyond which DF noise grows linearly with range (0.316 = 10 dB SNR margin, realistic DF only)
+    -- @field DF_RADAR_GAIN_DBI Assumed radar main lobe gain (dBi) for the intercept link budget
+    -- @field DF_SIDELOBE_DB Assumed average radar sidelobe level relative to the main lobe (dB)
+    -- @field DF_EWR_SIDELOBE_DB Assumed average sidelobe level for EWRs (dB)
+    -- @field DF_RADAR_SENS_DBM Assumed radar receiver sensitivity (dBm) used to back out transmitter power from the DCS detection range
+    -- @field DF_REF_RCS Reference target RCS (m^2) of the DCS detection range
+    -- @field DF_TRACK_BEAMWIDTH_DEG Tracking radar main lobe width (deg); platforms outside it hear sidelobes only
+    -- @field TDOA_SIGMA_NS Per-platform time of arrival error (ns, 1 sigma) for TDOA
+    -- @field FDOA_SIGMA_HZ Frequency difference error (Hz, 1 sigma) for FDOA
     -- @field DF_NAV_DRIFT_INTERVAL Seconds a platform keeps its navigation (INS) error before it is redrawn (realistic DF + platform position errors)
     -- @field DF_DEBUG If true, logs estimate error vs truth for every processed emitter (realistic DF tuning, default false)
     -- @field AUTO_ADD_PLATFORM_BY_PAYLOAD If true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
@@ -68,7 +76,15 @@ do
         REF_DIST = 75000, -- Do not change, used for datapoint weighting
         KALMAN_DEBUG = false,
         DF_SECTOR_DEG = 30,
-        DF_SNR_RANGE_FACTOR = 2,
+        DF_SNR_RANGE_FACTOR = 0.316,
+        DF_RADAR_GAIN_DBI = 35,
+        DF_SIDELOBE_DB = -30,
+        DF_EWR_SIDELOBE_DB = -20,
+        DF_RADAR_SENS_DBM = -110,
+        DF_REF_RCS = 5,
+        DF_TRACK_BEAMWIDTH_DEG = 2,
+        TDOA_SIGMA_NS = 50,
+        FDOA_SIGMA_HZ = 10,
         DF_NAV_DRIFT_INTERVAL = 600,
         DF_DEBUG = false,
         AUTO_ADD_PLATFORM_BY_PAYLOAD = true, -- if true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)

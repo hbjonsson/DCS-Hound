@@ -273,11 +273,13 @@ Default is on. `disableRealisticDF()` restores the legacy model (wavelength / an
 
 - **Persistent bias:** each platform has a fixed bearing error per emitter and per 30° aspect sector (`HOUND.DF_SECTOR_DEG`). Averaging samples does not remove it; changing geometry (orbit legs, extra platforms) does.
 - **Noise floor:** per-sample noise is at least the platform's DF class floor, regardless of antenna size.
-- **Range scaling:** noise grows linearly with range beyond `HOUND.DF_SNR_RANGE_FACTOR` × the emitter's detection range.
+- **Intercept (link budget):** each platform's main-lobe intercept range is derived from the radar's DCS detection range and the receiver sensitivity of its DF class: `Rml² = Rdet⁴ · 4π · S_radar / (G_t · RCS · S_esm)`; sidelobes at `HOUND.DF_SIDELOBE_DB` (EWR `HOUND.DF_EWR_SIDELOBE_DB`). Scanning radars sweep their main lobe past every platform. A radar tracking a target points its main lobe at that target: other platforms outside `HOUND.DF_TRACK_BEAMWIDTH_DEG` hear sidelobes only. Platforms beyond the available range get no datapoint.
+- **Range scaling:** noise grows linearly with range beyond `HOUND.DF_SNR_RANGE_FACTOR` × the available intercept range (0.316 = within 10 dB of receiver sensitivity).
 - **Receiver coverage:** emitters outside the platform's frequency coverage (`rx`) are not detected.
-- **Antenna apertures:** the line of sight is rotated into the platform body frame (heading, pitch, roll). Emitters outside every aperture (`ap`) are not detected, including airframe masking in banks. Noise grows as 1 / cos of the off-boresight angle. Azimuth-only arrays add a coning error `asin(cos(el) * sin(psi)) - psi` that grows with depression angle and off-boresight angle.
-- **Honest uncertainty:** the ellipse includes the bias error of every platform/sector bearing line (latest datapoint each, weighted by range and bias). One platform at one aspect keeps a long ellipse; crossing geometry shrinks it.
+- **Antenna apertures:** the line of sight is rotated into the platform body frame (heading, pitch, roll). Emitters outside every aperture (`ap`) are not detected, including airframe masking in banks. Noise grows as 1 / cos of the off-boresight angle. Azimuth-only arrays measure `sin(psi_m) = cos(el) * sin(psi)` (coning). The platform corrects coning with the elevation to the current estimate; the residual is applied to the bearing and added to the datapoint error.
+- **Honest uncertainty:** the ellipse includes the position error caused by the persistent biases. The Kalman filter tracks each bias as a consider parameter (Schmidt-Kalman): it records how much every bias moved the estimate and adds that covariance to the ellipse. Before the Kalman filter starts, the cluster ellipse adds the cross-bearing bias error of each platform/sector line. One platform at one aspect keeps a large ellipse; crossing geometry shrinks it.
 - **Navigation error:** with `enablePlatformPosErrors()`, each platform keeps its `ins_error` offset for `HOUND.DF_NAV_DRIFT_INTERVAL` seconds (default 600) instead of redrawing it every sample.
+- **TDOA / FDOA:** when two or more `tdoa` platforms (F-16C HTS) intercept the same emitter in the same scan, every pair adds a range-difference (TDOA, `HOUND.TDOA_SIGMA_NS` per platform) and a Doppler-difference (FDOA, `HOUND.FDOA_SIGMA_HZ`) update to the Kalman estimate. Measurements use true geometry; the filter uses reported (nav-error) positions. Two ships give a line of position; three ships give a fix.
 - **Gate:** datapoints with total error (2σ) above `HOUND.MAX_ANGULAR_RES_DEG` are discarded.
 
 | DF class | Bias (1σ) | Noise floor (1σ) |
@@ -300,6 +302,15 @@ Default is on. `disableRealisticDF()` restores the legacy model (wavelength / an
 | QUAD | four 90° quadrants, 360° |
 | FORWARD | nose ±70° |
 | (none) | omnidirectional, no off-boresight or coning error |
+
+| DF class | Receiver sensitivity | Sidelobe intercept of a 75 km SAM radar |
+|----------|----------------------|------------------------------------------|
+| PRECISION | -95 dBm | beyond radar horizon |
+| TACTICAL | -80 dBm | ~160 km |
+| COARSE | -70 dBm | ~50 km |
+| AMPLITUDE | -60 dBm | ~16 km |
+
+**Monte Carlo reference** (Hound UPLKF, 200–300 runs): RC-135 racetrack at 150 km from an SA-6, 30 min: median error 2.3–3.4 km, 95% ellipse ~19 × 5 km. F-16 HTS vs a tracking SA-6 (sidelobes only), 5 min: two-ship AOA ~1 km median; three-ship TDOA/FDOA ~65 m median, 95% ellipse ~360 × 70 m. Crossing flight paths (baseline collapsing mid-run) give over-confident ellipses (~75% coverage).
 
 Per-platform `df`, `rx` and `ap` values and sources: [Platforms: Realistic DF Data](platforms.md#realistic-df-data).
 

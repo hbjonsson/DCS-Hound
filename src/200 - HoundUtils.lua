@@ -1275,6 +1275,20 @@ do
         return az,el,vec
     end
 
+    --- Get line of sight angles in the platform body frame
+    -- @param axes platform orientation (DCS getPosition(): x forward, y up, z right)
+    -- @param src position of the platform
+    -- @param dst position of the target
+    -- @return body azimuth (rad, + starboard of the nose)
+    -- @return body elevation (rad)
+    function HOUND.Utils.Elint.getBodyAngles(axes, src, dst)
+        local vx, vy, vz = dst.x - src.x, dst.y - src.y, dst.z - src.z
+        local bx = vx * axes.x.x + vy * axes.x.y + vz * axes.x.z
+        local by = vx * axes.y.x + vy * axes.y.y + vz * axes.y.z
+        local bz = vx * axes.z.x + vy * axes.z.y + vz * axes.z.z
+        return l_math.atan2(bz, bx), l_math.atan2(by, l_math.sqrt(bx * bx + bz * bz))
+    end
+
     --- Get DF aperture geometry (realistic DF)
     -- transforms the line of sight into the platform body frame and selects the aperture closest to boresight
     -- @param axes platform orientation (DCS getPosition(): x forward, y up, z right)
@@ -1285,12 +1299,7 @@ do
     -- @return body-frame elevation (rad)
     function HOUND.Utils.Elint.getApertureGeometry(axes, src, dst, apertures)
         if type(apertures) ~= "table" then return 0, 0 end
-        local vx, vy, vz = dst.x - src.x, dst.y - src.y, dst.z - src.z
-        local bx = vx * axes.x.x + vy * axes.x.y + vz * axes.x.z
-        local by = vx * axes.y.x + vy * axes.y.y + vz * axes.y.z
-        local bz = vx * axes.z.x + vy * axes.z.y + vz * axes.z.z
-        local bodyAz = l_math.atan2(bz, bx)
-        local bodyEl = l_math.atan2(by, l_math.sqrt(bx * bx + bz * bz))
+        local bodyAz, bodyEl = HOUND.Utils.Elint.getBodyAngles(axes, src, dst)
         local bestPsi
         for _, aperture in ipairs(apertures) do
             if l_math.abs(bodyEl) <= l_math.rad(aperture.el) then
@@ -1302,6 +1311,20 @@ do
         end
         if not bestPsi then return end
         return bestPsi, bodyEl
+    end
+
+    --- Is platform inside a tracking radar's main lobe (realistic DF)
+    -- @param radarPos radar position
+    -- @param targetPos position of the radar's tracked target
+    -- @param platformPos ELINT platform position
+    -- @param beamwidth full main lobe width in radians
+    -- @return[type=bool] true if the platform is within beamwidth/2 of the radar-target line
+    function HOUND.Utils.Elint.isInMainLobe(radarPos, targetPos, platformPos, beamwidth)
+        local ax, ay, az = targetPos.x - radarPos.x, targetPos.y - radarPos.y, targetPos.z - radarPos.z
+        local bx, by, bz = platformPos.x - radarPos.x, platformPos.y - radarPos.y, platformPos.z - radarPos.z
+        local na, nb = l_math.sqrt(ax * ax + ay * ay + az * az), l_math.sqrt(bx * bx + by * by + bz * bz)
+        if na == 0 or nb == 0 then return true end
+        return (ax * bx + ay * by + az * bz) / (na * nb) >= l_math.cos(beamwidth / 2)
     end
 
     --- Get Signal strength of point

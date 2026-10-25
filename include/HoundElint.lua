@@ -33,7 +33,15 @@ do
         REF_DIST = 75000, -- Do not change, used for datapoint weighting
         KALMAN_DEBUG = false,
         DF_SECTOR_DEG = 30,
-        DF_SNR_RANGE_FACTOR = 2,
+        DF_SNR_RANGE_FACTOR = 0.316,
+        DF_RADAR_GAIN_DBI = 35,
+        DF_SIDELOBE_DB = -30,
+        DF_EWR_SIDELOBE_DB = -20,
+        DF_RADAR_SENS_DBM = -110,
+        DF_REF_RCS = 5,
+        DF_TRACK_BEAMWIDTH_DEG = 2,
+        TDOA_SIGMA_NS = 50,
+        FDOA_SIGMA_HZ = 10,
         DF_NAV_DRIFT_INTERVAL = 600,
         DF_DEBUG = false,
         AUTO_ADD_PLATFORM_BY_PAYLOAD = true, -- if true, will automatically add platforms that have ELINT payloads (currently, due to DCS limits, only works for units spawning with the required pods)
@@ -1956,10 +1964,10 @@ do
     }
 
     HOUND.DB.DfClass = {
-        ["PRECISION"] = { bias = 0.5, floor = 0.2 }, -- dedicated SIGINT interferometers
-        ["TACTICAL"]  = { bias = 1.0, floor = 0.5 }, -- tactical / MPA / AEW interferometers
-        ["COARSE"]    = { bias = 2.5, floor = 1.0 }, -- targeting pods, hybrid amplitude/phase
-        ["AMPLITUDE"] = { bias = 6.0, floor = 3.0 }, -- amplitude comparison RWR-class receivers
+        ["PRECISION"] = { bias = 0.5, floor = 0.2, sens = -95 }, -- dedicated SIGINT interferometers
+        ["TACTICAL"]  = { bias = 1.0, floor = 0.5, sens = -80 }, -- tactical / MPA / AEW interferometers
+        ["COARSE"]    = { bias = 2.5, floor = 1.0, sens = -70 }, -- targeting pods, hybrid amplitude/phase
+        ["AMPLITUDE"] = { bias = 6.0, floor = 3.0, sens = -60 }, -- amplitude comparison RWR-class receivers
     }
 
     HOUND.DB.RxBands = {
@@ -3014,7 +3022,7 @@ do
             ['An-26B'] = { antenna = { size = 23.8, factor = 1 }, ins_error = 100, df = 'TACTICAL', rx = 'WIDEBAND', ap = 'SIDE' },
             ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50, df = 'COARSE', rx = { 1.2, 11 }, ap = 'FORWARD' },
             ['AJS37'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'U22/A Jammer Pod', 'U22 Jammer' } }, ins_error = 50, df = 'AMPLITUDE', rx = 'RWR' },
-            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'FORWARD' },
+            ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0, df = 'COARSE', rx = 'RWR', ap = 'FORWARD', tdoa = true }, -- tdoa: multi-ship HTS (owner input)
             ['FA-18C_hornet'] = { antenna = { size = 13.6, factor = 1 }, require = { Payload = { 'ais-pod-t50' } },ins_error = 0, df = 'TACTICAL', rx = { 0.5, 18 }, ap = 'QUAD' }, -- FA-18C stand in for EA-18G, AIS-POD-T50 is standin for AN/ALQ-218
             ['JF-17'] = { antenna = { size = 3.25, factor = 1 }, require = { Payload = { 'KG-600' } }, ins_error = 0, df = 'AMPLITUDE', rx = 'RWR' },
             ['A6E'] = { antenna = { size = 9, factor = 1 }, require = { Payload = { 'BDU_45B' } }, ins_error = 0, df = 'TACTICAL', rx = { 0.064, 18 }, ap = 'QUAD' }, -- A-6E stand in for EA-6B, BDU_45B is Standin for ALQ-99
@@ -4270,6 +4278,7 @@ do
         platformData.rx = DbInfo.rx
         platformData.apertures = HOUND.DB.DfApertures[DbInfo.ap or ""]
         platformData.insError = errorDist
+        platformData.tdoa = DbInfo.tdoa == true
         platformData.axes = pose
 
         local VerticalOffset = DbInfo.antenna.size
@@ -4337,6 +4346,15 @@ do
         end
 
         return HOUND.DB.getDefraction(wavelength,HOUND.DB.getApertureSize(platform)) or l_math.rad(20.0) -- precision
+    end
+
+    function HOUND.DB.getInterceptRanges(detectionRange, dfClassName, isEWR)
+        if type(detectionRange) ~= "number" or detectionRange <= 0 then return end
+        local dfClass = HOUND.DB.DfClass[dfClassName] or HOUND.DB.DfClass.AMPLITUDE
+        local sensRatio = 10 ^ ((HOUND.DF_RADAR_SENS_DBM - dfClass.sens) / 10)
+        local mainRange = detectionRange * detectionRange * l_math.sqrt(4 * l_math.pi * sensRatio / (10 ^ (HOUND.DF_RADAR_GAIN_DBI / 10) * HOUND.DF_REF_RCS))
+        local sidelobe = isEWR and HOUND.DF_EWR_SIDELOBE_DB or HOUND.DF_SIDELOBE_DB
+        return mainRange, mainRange * 10 ^ (sidelobe / 20)
     end
 
     function HOUND.DB.getDfError(platformData, wavelength, beamMaxErr, signalStrength)
@@ -5612,14 +5630,17 @@ do
         return az,el,vec
     end
 
-    function HOUND.Utils.Elint.getApertureGeometry(axes, src, dst, apertures)
-        if type(apertures) ~= "table" then return 0, 0 end
+    function HOUND.Utils.Elint.getBodyAngles(axes, src, dst)
         local vx, vy, vz = dst.x - src.x, dst.y - src.y, dst.z - src.z
         local bx = vx * axes.x.x + vy * axes.x.y + vz * axes.x.z
         local by = vx * axes.y.x + vy * axes.y.y + vz * axes.y.z
         local bz = vx * axes.z.x + vy * axes.z.y + vz * axes.z.z
-        local bodyAz = l_math.atan2(bz, bx)
-        local bodyEl = l_math.atan2(by, l_math.sqrt(bx * bx + bz * bz))
+        return l_math.atan2(bz, bx), l_math.atan2(by, l_math.sqrt(bx * bx + bz * bz))
+    end
+
+    function HOUND.Utils.Elint.getApertureGeometry(axes, src, dst, apertures)
+        if type(apertures) ~= "table" then return 0, 0 end
+        local bodyAz, bodyEl = HOUND.Utils.Elint.getBodyAngles(axes, src, dst)
         local bestPsi
         for _, aperture in ipairs(apertures) do
             if l_math.abs(bodyEl) <= l_math.rad(aperture.el) then
@@ -5631,6 +5652,14 @@ do
         end
         if not bestPsi then return end
         return bestPsi, bodyEl
+    end
+
+    function HOUND.Utils.Elint.isInMainLobe(radarPos, targetPos, platformPos, beamwidth)
+        local ax, ay, az = targetPos.x - radarPos.x, targetPos.y - radarPos.y, targetPos.z - radarPos.z
+        local bx, by, bz = platformPos.x - radarPos.x, platformPos.y - radarPos.y, platformPos.z - radarPos.z
+        local na, nb = l_math.sqrt(ax * ax + ay * ay + az * az), l_math.sqrt(bx * bx + by * by + bz * bz)
+        if na == 0 or nb == 0 then return true end
+        return (ax * bx + ay * by + az * bz) / (na * nb) >= l_math.cos(beamwidth / 2)
     end
 
     function HOUND.Utils.Elint.getSignalStrength(src, dst, maxDetection)
@@ -7013,9 +7042,30 @@ do
         self.t0 = timestamp
 
         self.state, self.P = self:predictStep(self.state, self.P, deltaT)
+        self:propagateBiasSens(deltaT)
     end
 
-    function HOUND.Contact.Estimator.UPLKF:update(p0, z, timestamp, z_err)
+    function HOUND.Contact.Estimator.UPLKF:propagateBiasSens(deltaT)
+        if not self.biasSens then return end
+        for _, sens in pairs(self.biasSens) do
+            sens[1] = sens[1] + deltaT * sens[3]
+            sens[2] = sens[2] + deltaT * sens[4]
+        end
+    end
+
+    function HOUND.Contact.Estimator.UPLKF:getBiasCov()
+        if not self.biasSens then return end
+        local xx, zz, xz = 0, 0, 0
+        for _, sens in pairs(self.biasSens) do
+            local var = sens.sigma * sens.sigma
+            xx = xx + var * sens[1] * sens[1]
+            zz = zz + var * sens[2] * sens[2]
+            xz = xz + var * sens[1] * sens[2]
+        end
+        return { xx = xx, zz = zz, xz = xz }
+    end
+
+    function HOUND.Contact.Estimator.UPLKF:update(p0, z, timestamp, z_err, biasKey, biasSigma)
         timestamp = timestamp or timer.getAbsTime()
         local deltaT = timestamp - self.t0
 
@@ -7029,6 +7079,7 @@ do
             self.t0 = timestamp  -- only update time reference for significant time steps
             local Q = self:getQ(deltaT)
             x_hat, P_k = self:predictStep(self.state, self.P, deltaT, Q)
+            self:propagateBiasSens(deltaT)
         end
 
         local estimatedPos = self:getEstimatedPos(x_hat)
@@ -7038,6 +7089,7 @@ do
         local cos_beta_k, sin_beta_k = l_math.cos(beta_measured), l_math.sin(beta_measured)
 
         local m_k = cos_beta_k * (estimatedPos.x - p0.x) + sin_beta_k * (estimatedPos.z - p0.z)
+        local m_raw = m_k
 
         local m_min = 100
         local m_sign = (m_k >= 0) and 1 or -1
@@ -7061,12 +7113,66 @@ do
         self.state = x_hat + (K_k * y_k)
         self.P = (matrix(4, "I") - K_k * H_k) * P_k
 
+        self:applyGainToBiasSens(K_k, H_k)
+        if biasKey then
+            self.biasSens = self.biasSens or {}
+            local sens = self.biasSens[biasKey] or { 0, 0, 0, 0 }
+            local g = -m_raw / m_k
+            for i = 1, 4 do sens[i] = sens[i] + K_k[i][1] * g end
+            sens.sigma = biasSigma
+            self.biasSens[biasKey] = sens
+        end
+
         self.state[3][1] = HoundUtils.Mapping.clamp(self.state[3][1], -30.0, 30.0)
         self.state[4][1] = HoundUtils.Mapping.clamp(self.state[4][1], -30.0, 30.0)
 
         if HOUND.KALMAN_DEBUG and HOUND.DEBUG then
             self:updateMarker()
         end
+    end
+
+    function HOUND.Contact.Estimator.UPLKF:applyGainToBiasSens(K_k, H_k)
+        if not self.biasSens then return end
+        local h1, h2 = H_k[1][1], H_k[1][2]
+        for _, sens in pairs(self.biasSens) do
+            local hs = h1 * sens[1] + h2 * sens[2]
+            for i = 1, 4 do sens[i] = sens[i] - K_k[i][1] * hs end
+        end
+    end
+
+    function HOUND.Contact.Estimator.UPLKF:scalarUpdate(h1, h2, innovation, variance)
+        local H_k = matrix({ { h1, h2, 0, 0 } })
+        local S_k = H_k * self.P * H_k:transpose() + matrix({ { variance } })
+        local K_k = self.P * H_k:transpose() * S_k:invert()
+        self.state = self.state + K_k * matrix({ { innovation } })
+        self.P = (matrix(4, "I") - K_k * H_k) * self.P
+        self:applyGainToBiasSens(K_k, H_k)
+        self.state[3][1] = HoundUtils.Mapping.clamp(self.state[3][1], -30.0, 30.0)
+        self.state[4][1] = HoundUtils.Mapping.clamp(self.state[4][1], -30.0, 30.0)
+    end
+
+    function HOUND.Contact.Estimator.UPLKF:updateTdoa(s1, s2, rangeDiff, sigma)
+        local p = self:getEstimatedPos()
+        if not p then return end
+        local d1x, d1y, d1z = p.x - s1.x, p.y - s1.y, p.z - s1.z
+        local d2x, d2y, d2z = p.x - s2.x, p.y - s2.y, p.z - s2.z
+        local r1 = l_math.max(l_math.sqrt(d1x * d1x + d1y * d1y + d1z * d1z), 1)
+        local r2 = l_math.max(l_math.sqrt(d2x * d2x + d2y * d2y + d2z * d2z), 1)
+        self:scalarUpdate(d1x / r1 - d2x / r2, d1z / r1 - d2z / r2, rangeDiff - (r1 - r2), sigma * sigma)
+    end
+
+    function HOUND.Contact.Estimator.UPLKF:updateFdoa(s1, v1, s2, v2, freqDiff, sigma, wavelength)
+        local p = self:getEstimatedPos()
+        if not p then return end
+        local function term(s, v)
+            local dx, dy, dz = p.x - s.x, p.y - s.y, p.z - s.z
+            local r = l_math.max(l_math.sqrt(dx * dx + dy * dy + dz * dz), 1)
+            local vu = (v.x * dx + v.y * dy + v.z * dz) / r
+            return vu, (v.x - vu * dx / r) / r, (v.z - vu * dz / r) / r
+        end
+        local f1, g1x, g1z = term(s1, v1)
+        local f2, g2x, g2z = term(s2, v2)
+        self:scalarUpdate((g1x - g2x) / wavelength, (g1z - g2z) / wavelength, freqDiff - (f1 - f2) / wavelength, sigma * sigma)
     end
 
     setmetatable(HOUND.Contact.Estimator.UPLKF,
@@ -7312,27 +7418,40 @@ do
 
     function HOUND.Contact.Emitter:getBiasCov()
         if type(self._dfInfo) ~= "table" or not HoundUtils.Dcs.isPoint(self.pos.p) then return end
-        local Jxx, Jzz, Jxz, r2Max = 0, 0, 0, 0
+        local Jxx, Jzz, Jxz = 0, 0, 0
         local now = timer.getAbsTime()
         for key, info in pairs(self._dfInfo) do
             if now - info.t > HOUND.CONTACT_TIMEOUT then
                 self._dfInfo[key] = nil
             else
                 local dx, dz = self.pos.p.x - info.x, self.pos.p.z - info.z
-                local r2 = l_math.max(dx * dx + dz * dz, 1)
-                local w = 1 / (r2 * info.sigma * info.sigma)
+                local w = 1 / (l_math.max(dx * dx + dz * dz, 1) * info.sigma * info.sigma)
                 local nx, nz = -l_math.sin(info.az), l_math.cos(info.az)
                 Jxx = Jxx + w * nx * nx
                 Jzz = Jzz + w * nz * nz
                 Jxz = Jxz + w * nx * nz
-                r2Max = l_math.max(r2Max, r2)
             end
         end
-        if r2Max == 0 then return end
-        Jxx = Jxx + 1 / r2Max
-        Jzz = Jzz + 1 / r2Max
-        local det = Jxx * Jzz - Jxz * Jxz
-        return { xx = Jzz / det, zz = Jxx / det, xz = -Jxz / det }
+        local half = l_math.sqrt(((Jxx - Jzz) / 2)^2 + Jxz * Jxz)
+        local l1, l2 = (Jxx + Jzz) / 2 + half, (Jxx + Jzz) / 2 - half
+        if l1 <= 0 then return end
+        local theta = 0.5 * l_math.atan2(2 * Jxz, Jxx - Jzz)
+        local c, s = l_math.cos(theta), l_math.sin(theta)
+        local inv1 = 1 / l1
+        local inv2 = (l2 > 0.01 * l1) and (1 / l2) or 0
+        return { xx = inv1 * c * c + inv2 * s * s, zz = inv1 * s * s + inv2 * c * c, xz = (inv1 - inv2) * c * s }
+    end
+
+    function HOUND.Contact.Emitter.covFromEllipse(ellipse)
+        local sa, sb = ellipse.major / (2 * 2.45), ellipse.minor / (2 * 2.45)
+        local c, s = l_math.cos(ellipse.theta), l_math.sin(ellipse.theta)
+        return { xx = sa * sa * c * c + sb * sb * s * s, zz = sa * sa * s * s + sb * sb * c * c, xz = (sa * sa - sb * sb) * c * s }
+    end
+
+    function HOUND.Contact.Emitter:addTdoa(s1, v1, s2, v2, rangeDiff, sigmaRange, freqDiff, sigmaFreq, wavelength)
+        if not self.Kalman then return end
+        self.Kalman:updateTdoa(s1, s2, rangeDiff, sigmaRange)
+        self.Kalman:updateFdoa(s1, v1, s2, v2, freqDiff, sigmaFreq, wavelength)
     end
 
     function HOUND.Contact.Emitter:logDfTruth()
@@ -7357,7 +7476,7 @@ do
             self._dfInfo[datapoint.dfKey] = { x = datapoint.platformPos.x, z = datapoint.platformPos.z, az = datapoint.az, sigma = datapoint.biasSigma, t = datapoint.t }
         end
         if self.Kalman then
-            self.Kalman:update(datapoint.platformPos,datapoint.az,datapoint.t,datapoint.platformPrecision)
+            self.Kalman:update(datapoint.platformPos,datapoint.az,datapoint.t,datapoint.platformPrecision,datapoint.dfKey,datapoint.biasSigma)
         end
         self._platforms = self._platforms or {}
         self._platforms[datapoint.platformName] = datapoint.t
@@ -7530,7 +7649,7 @@ do
             local newContact = (self.state == HOUND.EVENTS.RADAR_NEW)
 
             self.pos.p = self.Kalman:getEstimatedPos()
-            self.uncertenty_data = self.Kalman:getUncertainty(nil, self:getBiasCov())
+            self.uncertenty_data = self.Kalman:getUncertainty(nil, self.Kalman:getBiasCov())
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
 
             self:calculateExtrasPosData(self.pos)
@@ -7618,10 +7737,8 @@ do
             self.uncertenty_data = self.calculateEllipse(estimatePositions,self.pos.p)
             local biasCov = self:getBiasCov()
             if biasCov then
-                local biasEllipse = HOUND.Contact.Estimator.ellipseFromCov(biasCov.xx, biasCov.zz, biasCov.xz)
-                if biasEllipse.major > self.uncertenty_data.major then
-                    self.uncertenty_data = biasEllipse
-                end
+                local clusterCov = HOUND.Contact.Emitter.covFromEllipse(self.uncertenty_data)
+                self.uncertenty_data = HOUND.Contact.Estimator.ellipseFromCov(clusterCov.xx + biasCov.xx, clusterCov.zz + biasCov.zz, clusterCov.xz + biasCov.xz)
             end
 
             self.uncertenty_data.az = l_mist.utils.round(l_math.deg((self.uncertenty_data.theta+l_mist.getNorthCorrection(self.pos.p)+PI_2)%PI_2))
@@ -9403,9 +9520,11 @@ do
             if radar and radar:isExist() then
                 local radarPos = radar:getPosition().p
                 radarPos.y = radarPos.y + radar:getDesc()["box"]["max"]["y"] -- use vehicle bounting box for height
-                local _,isRadarTracking = radar:getRadar()
+                local _,radarTarget = radar:getRadar()
 
-                isRadarTracking = HoundUtils.Dcs.isUnit(isRadarTracking)
+                local isRadarTracking = HoundUtils.Dcs.isUnit(radarTarget)
+                local trackTargetPos = realisticDF and isRadarTracking and radarTarget:getPoint() or nil
+                local tdoaObs, tdoaContact = {}, nil
 
                 for _,platform in ipairs(self.platforms) do
                     local platformData = HOUND.DB.getPlatformData(platform)
@@ -9417,18 +9536,35 @@ do
                         local maxAngularResolution = l_math.rad(10.0)
                         local noiseMaxErr, biasSigma, coning
                         if realisticDF then
-                            noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution,
-                                HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange))
+                            local signal = HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange)
+                            local mainRange, sideRange = HOUND.DB.getInterceptRanges(contact.detectionRange, platformData.df, contact.isEWR)
+                            if mainRange then
+                                local available = mainRange
+                                if trackTargetPos and not HoundUtils.Elint.isInMainLobe(radarPos, trackTargetPos, platformData.pos, l_math.rad(HOUND.DF_TRACK_BEAMWIDTH_DEG)) then
+                                    available = sideRange
+                                end
+                                local dx, dy, dz = radarPos.x - platformData.pos.x, radarPos.y - platformData.pos.y, radarPos.z - platformData.pos.z
+                                local dist = l_math.max(l_math.sqrt(dx * dx + dy * dy + dz * dz), 1)
+                                signal = dist <= available and (available / dist)^2 or nil
+                            end
+                            if signal then
+                                noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution, signal)
+                            end
                             if noiseMaxErr then
                                 local psi, bodyEl = HoundUtils.Elint.getApertureGeometry(platformData.axes, platformData.pos, radarPos, platformData.apertures)
                                 if psi then
                                     noiseMaxErr = noiseMaxErr / l_math.cos(psi)
-                                    coning = l_math.asin(l_math.cos(bodyEl) * l_math.sin(psi)) - psi
+                                    local correctionEl = 0
+                                    if HoundUtils.Dcs.isPoint(contact.pos.p) then
+                                        local _, estEl = HoundUtils.Elint.getBodyAngles(platformData.axes, platformData.pos, contact.pos.p)
+                                        correctionEl = estEl
+                                    end
+                                    coning = l_math.asin(l_math.cos(bodyEl) * l_math.sin(psi)) - l_math.asin(l_math.cos(correctionEl) * l_math.sin(psi))
                                 else
                                     noiseMaxErr = nil
                                 end
                             end
-                            sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2)
+                            sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2 + coning^2)
                             maxAngularResolution = l_math.rad(HOUND.MAX_ANGULAR_RES_DEG)
                         end
                         if sampleAngularResolution and sampleAngularResolution < maxAngularResolution then
@@ -9446,6 +9582,7 @@ do
                                 el = nil
                             end
 
+                            local truePos = { x = platformData.pos.x, y = platformData.pos.y, z = platformData.pos.z }
                             if not platformData.isStatic and self.settings:getPosErr() then
                                 local posErr = platformData.posErr
                                 if realisticDF then
@@ -9460,9 +9597,35 @@ do
                             datapoint.dfKey = dfKey
                             datapoint.biasSigma = biasSigma
                             contact:AddPoint(datapoint)
+                            if biasSigma and platformData.tdoa then
+                                tdoaObs[#tdoaObs + 1] = { truePos = truePos, pos = platformData.pos, vel = platform:getVelocity() }
+                                tdoaContact = contact
+                            end
                         end
                     end
                 end
+                if #tdoaObs > 1 then
+                    self:_sampleTdoa(tdoaContact, tdoaObs, radarPos, tdoaContact:getWavelenght(isRadarTracking))
+                end
+            end
+        end
+    end
+
+    function HOUND.ElintWorker:_sampleTdoa(contact, observations, radarPos, wavelength)
+        local sigmaRange = HOUND.TDOA_SIGMA_NS * 1e-9 * 299792458 * l_math.sqrt(2)
+        local function geometry(obs)
+            local dx, dy, dz = radarPos.x - obs.truePos.x, radarPos.y - obs.truePos.y, radarPos.z - obs.truePos.z
+            local r = l_math.sqrt(dx * dx + dy * dy + dz * dz)
+            return r, (obs.vel.x * dx + obs.vel.y * dy + obs.vel.z * dz) / r
+        end
+        for i = 1, #observations - 1 do
+            for j = i + 1, #observations do
+                local a, b = observations[i], observations[j]
+                local rA, vuA = geometry(a)
+                local rB, vuB = geometry(b)
+                local rangeDiff = rA - rB + HoundUtils.Vector.getRandomVec2(2 * sigmaRange).x
+                local freqDiff = (vuA - vuB) / wavelength + HoundUtils.Vector.getRandomVec2(2 * HOUND.FDOA_SIGMA_HZ).x
+                contact:addTdoa(a.pos, a.vel, b.pos, b.vel, rangeDiff, 2 * sigmaRange, freqDiff, 2 * HOUND.FDOA_SIGMA_HZ, wavelength)
             end
         end
     end
@@ -12181,4 +12344,4 @@ do
     trigger.action.outText("Hound ELINT ("..HOUND.VERSION..") is loaded.", 15)
     env.info("[Hound] - finished loading (".. HOUND.VERSION..")")
 end
--- Hound version 0.5.2-455 - Compiled on 2026-10-25 15:18
+-- Hound version 0.5.2-455 - Compiled on 2026-10-25 15:42
