@@ -221,6 +221,19 @@ do
         return self.settings:setPosErr(false)
     end
 
+    --- enable realistic DF error model
+    -- persistent per-aspect bias, noise floor, range scaling and receiver band coverage
+    -- @return[type=bool] if settings was updated
+    function HoundElint:enableRealisticDF()
+        return self.settings:setRealisticDF(true)
+    end
+
+    --- disable realistic DF error model
+    -- @return[type=bool] if settings was updated
+    function HoundElint:disableRealisticDF()
+        return self.settings:setRealisticDF(false)
+    end
+
     --- get current callsign override table
     -- @return table current state
     function HoundElint:getCallsignOverride()

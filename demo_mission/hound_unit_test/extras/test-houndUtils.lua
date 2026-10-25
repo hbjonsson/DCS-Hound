@@ -114,6 +114,37 @@ do
         lu.assertIsNumber(err2.az)
     end
 
+    function TestHoundUtils:TestDfError()
+        local pd = { df = 'TACTICAL', rx = 'RWR' }
+        local wl = 0.03 -- 10 GHz
+        -- class floor applies when aperture error is tiny
+        local noise, bias = HOUND.DB.getDfError(pd, wl, 0.0001, 4)
+        lu.assertAlmostEquals(noise, 2 * math.rad(0.5), 1e-9)
+        lu.assertAlmostEquals(bias, math.rad(1.0), 1e-9)
+        -- aperture error dominates when larger than floor
+        noise = HOUND.DB.getDfError(pd, wl, math.rad(4), 4)
+        lu.assertAlmostEquals(noise, math.rad(4), 1e-9)
+        -- within DF_SNR_RANGE_FACTOR x detection range: no growth
+        noise = HOUND.DB.getDfError(pd, wl, 0, 1)
+        lu.assertAlmostEquals(noise, 2 * math.rad(0.5), 1e-9)
+        -- 4 x detection range (strength 1/16), K = 2: noise doubles
+        noise = HOUND.DB.getDfError(pd, wl, 0, 1/16)
+        lu.assertAlmostEquals(noise, 4 * math.rad(0.5), 1e-9)
+        -- unknown class falls back to AMPLITUDE
+        noise, bias = HOUND.DB.getDfError({ rx = 'RWR' }, wl, 0, 1)
+        lu.assertAlmostEquals(bias, math.rad(6.0), 1e-9)
+    end
+
+    function TestHoundUtils:TestDfErrorBandGate()
+        local pd = { df = 'TACTICAL', rx = 'RWR' }
+        lu.assertIsNil(HOUND.DB.getDfError(pd, 2.0, 0, 1))    -- 150 MHz, below RWR
+        lu.assertIsNil(HOUND.DB.getDfError(pd, 0.01, 0, 1))   -- 30 GHz, above RWR
+        lu.assertIsNumber(HOUND.DB.getDfError(pd, 0.1, 0, 1)) -- 3 GHz
+        lu.assertIsNumber(HOUND.DB.getDfError({ df = 'TACTICAL', rx = { 0.064, 18 } }, 2.0, 0, 1))
+        lu.assertIsNumber(HOUND.DB.getDfError({ df = 'TACTICAL' }, 2.0, 0, 1)) -- no rx, no gate
+        lu.assertIsNil(HOUND.DB.getDfError(nil, 0.1, 0, 1))
+    end
+
     function TestHoundUtils:TestGetControllerResponse()
         local resp = HOUND.Utils.getControllerResponse()
         lu.assertIsString(resp)

@@ -73,8 +73,10 @@ do
         if not HOUND.Utils.Dcs.isUnit(DcsObject) and not HOUND.Utils.Dcs.isStaticObject(DcsObject) then return end
         if not DcsObject:isExist() then return end
 
+        local pose = DcsObject:getPosition()
         local platformData={
-            pos = HOUND.Utils.Dcs.copyPoint(DcsObject:getPosition().p),
+            pos = HOUND.Utils.Dcs.copyPoint(pose.p),
+            heading = l_math.atan2(pose.x.z, pose.x.x),
             isStatic = false,
             isAerial = false,
         }
@@ -87,6 +89,8 @@ do
         platformData.posErr = HOUND.Utils.Vector.getRandomVec2(errorDist)
         platformData.posErr.y = 0
         platformData.ApertureSize = (DbInfo.antenna.size * DbInfo.antenna.factor) or 0
+        platformData.df = DbInfo.df
+        platformData.rx = DbInfo.rx
 
         local VerticalOffset = DbInfo.antenna.size
         local objHitBox = DcsObject:getDesc()["box"]
@@ -178,6 +182,32 @@ do
         end
 
         return HOUND.DB.getDefraction(wavelength,HOUND.DB.getApertureSize(platform)) or l_math.rad(20.0) -- precision
+    end
+
+    --- Elint Function - Get realistic DF error
+    -- applies receiver band coverage, DF class noise floor and range scaling to the aperture limited error
+    -- @param platformData platform data (from @{HOUND.DB.getPlatformData}), uses df and rx
+    -- @param wavelength emitter wavelength in meters
+    -- @param beamMaxErr aperture limited error (~2 sigma, radians) from @{HOUND.DB.getSensorPrecision}
+    -- @param signalStrength signal strength from @{HOUND.Utils.Elint.getSignalStrength} ((detection range/distance)^2)
+    -- @return noise error (~2 sigma, radians), nil if emitter is outside receiver coverage
+    -- @return bias sigma (radians)
+    function HOUND.DB.getDfError(platformData, wavelength, beamMaxErr, signalStrength)
+        if type(platformData) ~= "table" or type(wavelength) ~= "number" or wavelength <= 0 then return end
+        local rx = platformData.rx
+        if type(rx) == "string" then rx = HOUND.DB.RxBands[rx] end
+        if type(rx) == "table" then
+            local freqGHz = 0.299792458 / wavelength
+            if freqGHz < rx[1] or freqGHz > rx[2] then return end
+        end
+        local dfClass = HOUND.DB.DfClass[platformData.df] or HOUND.DB.DfClass.AMPLITUDE
+        -- one-way SNR ~ 1/r^2, so angular noise ~ 1/sqrt(SNR) ~ r beyond K x detection range
+        local rangeFactor = 1
+        if type(signalStrength) == "number" and signalStrength > 0 then
+            rangeFactor = l_math.max(1, 1 / (HOUND.DF_SNR_RANGE_FACTOR * l_math.sqrt(signalStrength)))
+        end
+        local sigmaNoise = l_math.max(l_math.rad(dfClass.floor), (beamMaxErr or 0) / 2) * rangeFactor
+        return 2 * sigmaNoise, l_math.rad(dfClass.bias)
     end
 
 

@@ -224,6 +224,33 @@ do
         end
 
     end
+    --- Get persistent DF bias for platform and aspect sector (realistic DF)
+    -- drawn once per platform/sector from N(0, sigma) and cached on the contact
+    -- @param platformName name of detecting platform
+    -- @param sector aspect sector index (relative bearing / HOUND.DF_SECTOR_DEG)
+    -- @param sigma bias standard deviation in radians
+    -- @return bias in radians
+    function HOUND.Contact.Emitter:getDfBias(platformName, sector, sigma)
+        self._dfBias = self._dfBias or {}
+        local key = platformName .. "#" .. sector
+        if not self._dfBias[key] then
+            self._dfBias[key] = HoundUtils.Vector.getRandomVec2(2 * sigma).x
+        end
+        return self._dfBias[key]
+    end
+
+    --- log estimate error against truth (HOUND.DF_DEBUG only)
+    -- @local
+    function HOUND.Contact.Emitter:logDfTruth()
+        if not HOUND.DF_DEBUG or not HoundUtils.Dcs.isPoint(self.pos.p) or type(self.uncertenty_data) ~= "table" then return end
+        if type(self.DcsObject) ~= "table" or type(self.DcsObject.isExist) ~= "function" or not self.DcsObject:isExist() then return end
+        local err = HoundUtils.Geo.get2DDistance(self.DcsObject:getPosition().p, self.pos.p)
+        local major = self.uncertenty_data.major or 0
+        env.info(string.format("[Hound](DF) %s err=%d major=%d minor=%d withinMajor=%s kalman=%s platforms=%d",
+            self.DcsObjectName, l_math.floor(err), major, self.uncertenty_data.minor or 0,
+            tostring(err <= major / 2), tostring(self.Kalman ~= nil), HOUND.Length(self.detected_by or {})))
+    end
+
     --- Add Datapoint to content
     -- @param datapoint @{HOUND.Contact.Datapoint}
     function HOUND.Contact.Emitter:AddPoint(datapoint)
@@ -460,6 +487,7 @@ do
                 self.state = HOUND.EVENTS.RADAR_DETECTED
             end
 
+            self:logDfTruth()
             self:queueEvent(self.state)
             return self.state
         end
@@ -551,6 +579,7 @@ do
             self.state = HOUND.EVENTS.RADAR_DETECTED
             self:calculateExtrasPosData(self.pos)
         end
+        self:logDfTruth()
         self:queueEvent(self.state)
         return self.state
     end

@@ -434,6 +434,7 @@ do
     -- @local
     function HOUND.ElintWorker:_sampleRadars(Radars)
         if HOUND.Length(Radars) == 0 then return end
+        local realisticDF = self.settings:getRealisticDF()
         for _,RadarName in ipairs(Radars) do
             local radar = Unit.getByName(RadarName)
             if radar and radar:isExist() then
@@ -448,9 +449,26 @@ do
 
                     if platformData and HoundUtils.Geo.checkLOS(platformData.pos, radarPos) then
                         local contact = self:getContact(radar)
-                        local sampleAngularResolution = HOUND.DB.getSensorPrecision(platform,contact:getWavelenght(isRadarTracking))
-                        if sampleAngularResolution < l_math.rad(10.0) then
-                            local az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, sampleAngularResolution )
+                        local wavelength = contact:getWavelenght(isRadarTracking)
+                        local sampleAngularResolution = HOUND.DB.getSensorPrecision(platform,wavelength)
+                        local maxAngularResolution = l_math.rad(10.0)
+                        local noiseMaxErr, biasSigma
+                        if realisticDF then
+                            noiseMaxErr, biasSigma = HOUND.DB.getDfError(platformData, wavelength, sampleAngularResolution,
+                                HoundUtils.Elint.getSignalStrength(platformData.pos,radarPos,contact.detectionRange))
+                            -- datapoint carries total error (noise + bias) as ~2 sigma
+                            sampleAngularResolution = noiseMaxErr and 2 * l_math.sqrt((noiseMaxErr / 2)^2 + biasSigma^2)
+                            maxAngularResolution = l_math.rad(HOUND.MAX_ANGULAR_RES_DEG)
+                        end
+                        if sampleAngularResolution and sampleAngularResolution < maxAngularResolution then
+                            local az,el
+                            if biasSigma then
+                                az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, noiseMaxErr )
+                                local sector = l_math.floor(((az - platformData.heading) % (2 * l_math.pi)) / l_math.rad(HOUND.DF_SECTOR_DEG))
+                                az = (az + contact:getDfBias(platform:getName(), sector, biasSigma)) % (2 * l_math.pi)
+                            else
+                                az,el = HoundUtils.Elint.getAzimuth( platformData.pos, radarPos, sampleAngularResolution )
+                            end
                             if not platformData.isAerial then
                                 el = nil
                             end

@@ -131,6 +131,15 @@ HoundInstance:enablePlatformPosErrors()
 HoundInstance:disablePlatformPosErrors()
 ```
 
+**Realistic DF error model (default off):**
+
+```lua
+HoundInstance:enableRealisticDF()
+HoundInstance:disableRealisticDF()
+```
+
+📖 [How It Works: Realistic DF](how-it-works.md#realistic-df-opt-in)
+
 📖 [Platforms Guide](platforms.md)
 
 ---
@@ -661,6 +670,8 @@ end
 | `getAlertOnLaunch()`         | -                   | boolean |
 | `enablePlatformPosErrors()`  | -                   | -       |
 | `disablePlatformPosErrors()` | -                   | -       |
+| `enableRealisticDF()`        | -                   | boolean |
+| `disableRealisticDF()`       | -                   | boolean |
 | `setTimerInterval()`         | timerName, seconds  | -       |
 | `setAtisUpdateInterval()`    | seconds             | -       |
 | `enableText()`               | sectorName          | -       |

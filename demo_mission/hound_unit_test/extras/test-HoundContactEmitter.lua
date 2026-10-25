@@ -147,6 +147,22 @@ do
         self.contacts = nil
     end
 
+    function TestHoundContactEmitter:TestDfBias()
+        local stub = {}
+        local sigma = math.rad(1)
+        local b1 = HOUND.Contact.Emitter.getDfBias(stub, "P1", 3, sigma)
+        lu.assertIsNumber(b1)
+        -- same platform and sector: same bias
+        lu.assertEquals(HOUND.Contact.Emitter.getDfBias(stub, "P1", 3, sigma), b1)
+        -- independent sectors: sample sigma matches requested sigma
+        local sum2, n = 0, 2000
+        for i = 1, n do
+            local b = HOUND.Contact.Emitter.getDfBias(stub, "P2", i, sigma)
+            sum2 = sum2 + b * b
+        end
+        lu.assertTrue(math.abs(math.sqrt(sum2 / n) - sigma) / sigma < 0.1)
+    end
+
     function TestHoundContactEmitter:TestConstructorInvalid()
         lu.assertIsNil(HOUND.Contact.Emitter:New())
         lu.assertIsNil(HOUND.Contact.Emitter:New(nil,coalition.side.BLUE))

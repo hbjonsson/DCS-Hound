@@ -262,6 +262,40 @@ HoundInstance:enablePlatformPosErrors()
 
 ---
 
+## Realistic DF (Opt-in)
+
+```lua
+HoundInstance:enableRealisticDF()
+HoundInstance:disableRealisticDF()
+```
+
+Default is off. When enabled:
+
+- **Persistent bias:** each platform has a fixed bearing error per emitter and per 30° aspect sector (`HOUND.DF_SECTOR_DEG`). Averaging samples does not remove it; changing geometry (orbit legs, extra platforms) does.
+- **Noise floor:** per-sample noise is at least the platform's DF class floor, regardless of antenna size.
+- **Range scaling:** noise grows linearly with range beyond `HOUND.DF_SNR_RANGE_FACTOR` × the emitter's detection range.
+- **Receiver coverage:** emitters outside the platform's frequency coverage (`rx`) are not detected.
+- **Gate:** datapoints with total error (2σ) above `HOUND.MAX_ANGULAR_RES_DEG` are discarded.
+
+| DF class | Bias (1σ) | Noise floor (1σ) |
+|----------|-----------|------------------|
+| PRECISION | 0.5° | 0.2° |
+| TACTICAL | 1.0° | 0.5° |
+| COARSE | 2.5° | 1.0° |
+| AMPLITUDE | 6.0° | 3.0° |
+
+| Receiver preset | Coverage |
+|-----------------|----------|
+| WIDEBAND | 0.03–40 GHz |
+| ESM | 0.5–18 GHz |
+| RWR | 2–18 GHz |
+
+Per-platform `df` and `rx` values: `src/101 - HoundDBs_UnitDcs.lua`, `src/102 - HoundDBs_UnitMods.lua`.
+
+**Tuning log:** set `HOUND.DF_DEBUG = true` in the mission script to log `[Hound](DF) <unit> err=<m> major=<m> minor=<m> withinMajor=<bool>` against true emitter positions on every process cycle.
+
+---
+
 ## Advanced Concepts
 
 ### Pre-Briefed Contacts

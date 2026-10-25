@@ -36,6 +36,10 @@ function loadHound(path)
     -- loadfile(path..'/src/102 - HoundDBs_UnitMods.lua')()
 end
 
+-- keep in sync with HOUND.DB.DfClass / HOUND.DB.RxBands (src/100 - HoundDBs.lua)
+DF_CLASSES = { PRECISION = true, TACTICAL = true, COARSE = true, AMPLITUDE = true }
+RX_BANDS = { WIDEBAND = true, ESM = true, RWR = true }
+
 function getKeys(t)
     local keys = {}
     if type(t) == 'table' then
@@ -80,6 +84,13 @@ function TestHoundDB:testDCSPlatforms()
             if data.require then
                 lu.assertIsTable(data.require,"require is invalid for "..type)
             end
+            lu.assertTrue(DF_CLASSES[data.df],"df is invalid for "..type)
+            if type(data.rx) == "table" then
+                lu.assertIsNumber(data.rx[1],"rx min is invalid for "..type)
+                lu.assertIsNumber(data.rx[2],"rx max is invalid for "..type)
+            else
+                lu.assertTrue(RX_BANDS[data.rx],"rx is invalid for "..type)
+            end
         end
     end
 end
@@ -94,6 +105,13 @@ function TestHoundDB:TestModPlatforms()
             lu.assertIsNumber(data['antenna']['factor'])
             if data.require then
                 lu.assertIsTable(data.require,"require is invalid for "..type)
+            end
+            lu.assertTrue(DF_CLASSES[data.df],"df is invalid for "..type)
+            if type(data.rx) == "table" then
+                lu.assertIsNumber(data.rx[1],"rx min is invalid for "..type)
+                lu.assertIsNumber(data.rx[2],"rx max is invalid for "..type)
+            else
+                lu.assertTrue(RX_BANDS[data.rx],"rx is invalid for "..type)
             end
         end
     end

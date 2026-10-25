@@ -97,6 +97,15 @@ do
         lu.assertEquals(self.houndBlue.contacts.settings:getMarkerType(),HOUND.MARKER.CIRCLE)
     end
 
+    function TestHoundFunctional:Test_01_init_04_ConfigRealisticDF()
+        lu.assertIsFalse(self.houndBlue.settings:getRealisticDF())
+        lu.assertIsTrue(self.houndBlue:enableRealisticDF())
+        lu.assertIsTrue(self.houndBlue.settings:getRealisticDF())
+        lu.assertIsTrue(self.houndBlue:disableRealisticDF())
+        lu.assertIsFalse(self.houndBlue.settings:getRealisticDF())
+        lu.assertIsFalse(self.houndBlue.settings:setRealisticDF("yes"))
+    end
+
     function TestHoundFunctional:Test_01_init_05_HoundStartup()
         -- make sure system is not running and no platforms are present
         lu.assertEquals(self.houndBlue:getId(),1)

@@ -38,6 +38,7 @@ do
             detectDeadRadars = true,
             NatoBrevity = false,
             platformPosErr = false,
+            realisticDF = false,
             useNatoCallsigns = false,
             AtisUpdateInterval = 180,
             AlertOnLaunch = false,
@@ -261,6 +262,27 @@ do
         instance.setPosErr = function(self,value)
             if type(value) == "boolean" then
                 self.preferences.platformPosErr = value
+                return true
+            end
+            return false
+        end
+
+        --- Realistic DF getter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @return[type=Bool] True if realistic DF error model is used
+        instance.getRealisticDF = function(self)
+            return self.preferences.realisticDF
+        end
+
+        --- Realistic DF setter
+        -- @within HOUND.Config.instance
+        -- @param self config instance
+        -- @bool value true to use realistic DF error model
+        -- @return[type=Bool] True if change was made
+        instance.setRealisticDF = function(self,value)
+            if type(value) == "boolean" then
+                self.preferences.realisticDF = value
                 return true
             end
             return false

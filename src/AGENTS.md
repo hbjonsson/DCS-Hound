@@ -36,6 +36,8 @@ This subtree owns all Lua source files that compose the HoundElint system. The n
 - `Site.typeAssigned` computed by **set intersection** of its emitters' `typeAssigned` arrays
 - `Contact.Base` position data (`pos.LL`, `pos.grid`, `pos.be`) is lazily derived from `pos.p`; `hasPosData()`/`ensurePosData()` gate functions that concatenate grid/BE strings
 - `ensurePosData()` recomputes `pos.LL` from `pos.p` when either `lat` or `lon` is absent (partial LL values are not trusted)
+- `Emitter._dfBias[platformName#sector]` — persistent DF bias (radians), realistic DF only; drawn once, never cleared
+- `HOUND.DB.Platform` entries carry `df` (`HOUND.DB.DfClass` key) and `rx` (`HOUND.DB.RxBands` key or `{minGHz,maxGHz}`); both keys must also be listed in `tools/validate_db.lua`
 
 ### Processing Cycles (default intervals)
 

@@ -99,6 +99,28 @@ do
         ["M"] = {0.002998,0.001999},
     }
 
+    --- DF technique classes (realistic DF)
+    -- 1 sigma values in degrees. bias is drawn once per platform/emitter/aspect sector, floor is the minimum per-sample noise.
+    -- Ranges from US 6,061,022 (amplitude comparison ~10 deg, interferometer <0.5-1 deg) and operational ESM figures (0.5-2 deg).
+    -- @table HOUND.DB.DfClass
+    -- @usage ['TACTICAL'] = { bias = 1.0, floor = 0.5 }
+    HOUND.DB.DfClass = {
+        ["PRECISION"] = { bias = 0.5, floor = 0.2 }, -- dedicated SIGINT interferometers
+        ["TACTICAL"]  = { bias = 1.0, floor = 0.5 }, -- tactical / MPA / AEW interferometers
+        ["COARSE"]    = { bias = 2.5, floor = 1.0 }, -- targeting pods, hybrid amplitude/phase
+        ["AMPLITUDE"] = { bias = 6.0, floor = 3.0 }, -- amplitude comparison RWR-class receivers
+    }
+
+    --- Receiver frequency coverage presets (realistic DF)
+    -- min and max frequency in GHz. Platforms may also use an inline {min,max} table.
+    -- @table HOUND.DB.RxBands
+    -- @usage ['RWR'] = { 2, 18 }
+    HOUND.DB.RxBands = {
+        ["WIDEBAND"] = { 0.03, 40 }, -- dedicated SIGINT, notional full A-K coverage
+        ["ESM"]      = { 0.5, 18 },  -- AEW/MPA ESM with low band
+        ["RWR"]      = { 2, 18 },    -- standard E-J band ESM/RWR (E-3 AN/AYR-1: 2-18 GHz)
+    }
+
     --- Radar types ENUM
     -- @table HOUND.DB.RadarType
     -- @field Radar type in hex
