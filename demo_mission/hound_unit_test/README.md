@@ -868,6 +868,8 @@ Drawn zone: **"Tinian Sector"** polygon (Author layer).
 
 6. **Contact file restructuring**: `test-HoundContact.lua` was split into `test-HoundContactEmitter.lua` (TestHoundContact + TestHoundContactEmitter + TestHoundEmitterComms + Base sector/event/queue tests folded into Emitter) and `test-HoundContactSite.lua` (TestHoundContactSite + TestHoundSiteComms). The TestHoundContactBase class was eliminated — its sector/event/queue tests moved to TestHoundContactEmitter. `test-HoundEmitterComms.lua` and `test-HoundSiteComms.lua` were folded into the respective class files.
 
+7. **C-17A is not a valid platform**: `C-17A` is removed from `HOUND.DB.Platform` (`KC-135` / `KC135MPRS` are the RC-135 stand-ins). The mission's `ELINT_BLUE_C17_EAST` / `ELINT_BLUE_C17_WEST` units are still C-17A, so tests that add them as platforms (e.g. `test-houndUtils.lua:832` `getApertureSize == 40`, `Test_02_base_01_Init`, `TestLocation`) fail until the .miz units are changed to KC-135.
+
 ## Fixes Applied
 
 | Issue | File | Change |

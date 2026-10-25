@@ -44,7 +44,7 @@ Hound is a radar detection and tracking system for DCS World. It detects enemy r
 ### Mission Units
 
 Place at least 2 ELINT platform units (for triangulation):
-- Aircraft: C-130, C-17, EA-6B, EA-18G, RC-135, etc.
+- Aircraft: C-130, KC-135, EA-6B, EA-18G, RC-135, etc.
 - Ground: Comms Tower M (static object on high ground)
 - Use the exact **unit name** (not group name) when calling `addPlatform()`
 
@@ -304,7 +304,7 @@ do
   -- Add 4 ELINT platforms by DCS unit name
   houndBlue:addPlatform("ELINT_C130_1")
   houndBlue:addPlatform("ELINT_C130_2")
-  houndBlue:addPlatform("ELINT_C17")
+  houndBlue:addPlatform("ELINT_KC135")
   houndBlue:addPlatform("ELINT_Tower")
 
   -- Add child sectors with priority (lower = higher priority)

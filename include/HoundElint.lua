@@ -2966,38 +2966,30 @@ do
         [Object.Category.STATIC] = {
             ['Comms tower M']   = { antenna = { size = 107, factor = 1 }, ins_error = 0 },
             ['.Command Center'] = { antenna = { size = 62, factor = 1 }, ins_error = 0 },
-            ['Cow']             = { antenna = { size = 1000, factor = 10 }, ins_error = 0 },
             ['TV tower']        = { antenna = { size = 235, factor = 1 }, ins_error = 0 },
         },
         [Object.Category.UNIT] = {
             ['Patriot AMG'] = { antenna = { size = 15, factor = 1 }, ins_error = 0 },
             ['SPK-11'] = { antenna = { size = 15, factor = 1 }, ins_error = 0 },
-            ['CH-47D'] = { antenna = { size = 12, factor = 1 }, ins_error = 0 },
-            ['CH-53E'] = { antenna = { size = 10, factor = 1 }, ins_error = 0 },
-            ['MIL-26'] = { antenna = { size = 20, factor = 1 }, ins_error = 50 },
             ['SH-60B'] = { antenna = { size = 8, factor = 1 }, ins_error = 0 },
             ['UH-60A'] = { antenna = { size = 8, factor = 1 }, ins_error = 0 },
             ['Mi-8MT'] = { antenna = { size = 8, factor = 1 }, ins_error = 0 },
-            ['UH-1H'] = { antenna = { size = 4, factor = 1 }, ins_error = 50 },
             ['KA-27'] = { antenna = { size = 4, factor = 1 }, ins_error = 50 },
             ['C-130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 },
             ['C-130J-30'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 },
-            ['C-17A'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }, -- stand-in for RC-135, tuned antenna size to match
+            ['KC-135'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }, -- stand-in for RC-135 (same C-135 airframe)
+            ['KC135MPRS'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }, -- stand-in for RC-135 (same C-135 airframe)
             ['S-3B'] = { antenna = { size = 18, factor = 0.8 }, ins_error = 0 },
             ['E-3A'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0 },
             ['E-2C'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0 },
             ['E-2D'] = { antenna = { size = 7, factor = 0.5 }, ins_error = 0 },
             ['Tu-95MS'] = { antenna = { size = 50, factor = 1 }, ins_error = 50 },
             ['Tu-142'] = { antenna = { size = 50, factor = 1 }, ins_error = 0 },
-            ['IL-76MD'] = { antenna = { size = 48, factor = 0.8 }, ins_error = 50 },
-            ['H-6J'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 100 },
             ['Su-24M'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50 },
             ['Su-24MR'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'TANGAZH' } }, ins_error = 50 },
             ['Su-25TM'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50 },
-            ['An-30M'] = { antenna = { size = 25, factor = 1 }, ins_error = 50 },
             ['A-50'] = { antenna = { size = 9, factor = 0.5 }, ins_error = 0 },
             ['An-26B'] = { antenna = { size = 26, factor = 1 }, ins_error = 100 },
-            ['C-47'] = { antenna = { size = 12, factor = 1 }, ins_error = 100 },
             ['Su-25T'] = { antenna = { size = 3.5, factor = 1 }, require = { Payload = { 'PHANTASM' } }, ins_error = 50 },
             ['AJS37'] = { antenna = { size = 4.5, factor = 1 }, require = { Payload = { 'U22/A Jammer Pod', 'U22 Jammer' } }, ins_error = 50 },
             ['F-16C_50'] = { antenna = { size = 1.45, factor = 1 }, require = { Payload = { 'f-16c_hts_pod' } }, ins_error = 0 },
@@ -3015,7 +3007,6 @@ do
 end
 do
     HOUND.DB.Platform[Object.Category.UNIT]['UH-60L'] = { antenna = { size = 8, factor = 1 }, ins_error = 0 }      -- community UH-69L
-    HOUND.DB.Platform[Object.Category.UNIT]['Hercules'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 }   -- Anubis' C-130J
     HOUND.DB.Platform[Object.Category.UNIT]['EC130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 }      -- Secret Squirrel EC-130
     HOUND.DB.Platform[Object.Category.UNIT]['RC135RJ'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }    -- Secret Squirrel RC-135
     HOUND.DB.Platform[Object.Category.UNIT]['P3C_Orion'] = { antenna = { size = 25, factor = 1 }, ins_error = 0 }  -- MAM P-3C_Orion

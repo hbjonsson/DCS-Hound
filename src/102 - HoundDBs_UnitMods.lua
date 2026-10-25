@@ -7,7 +7,6 @@ do
     -- Helicopters
     HOUND.DB.Platform[Object.Category.UNIT]['UH-60L'] = { antenna = { size = 8, factor = 1 }, ins_error = 0 }      -- community UH-69L
     -- Fixed Wing
-    HOUND.DB.Platform[Object.Category.UNIT]['Hercules'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 }   -- Anubis' C-130J
     HOUND.DB.Platform[Object.Category.UNIT]['EC130'] = { antenna = { size = 35, factor = 1 }, ins_error = 0 }      -- Secret Squirrel EC-130
     HOUND.DB.Platform[Object.Category.UNIT]['RC135RJ'] = { antenna = { size = 40, factor = 1 }, ins_error = 0 }    -- Secret Squirrel RC-135
     HOUND.DB.Platform[Object.Category.UNIT]['P3C_Orion'] = { antenna = { size = 25, factor = 1 }, ins_error = 0 }  -- MAM P-3C_Orion

@@ -12,12 +12,12 @@ Complete list of units capable of ELINT operations in Hound.
 
 - 🥇 **TV Tower** (static) - Exceptional accuracy
 - 🥇 **C-130** - Excellent airborne platform
-- 🥇 **C-17** - Stand-in for RC-135, very accurate
+- 🥇 **KC-135** - Stand-in for RC-135 (same C-135 airframe), very accurate
 
 **Best By Role:**
 
-- **Long-range picket:** C-17, Tu-95, IL-76
-- **Medium range:** C-130, An-30M, An-26B
+- **Long-range picket:** KC-135, Tu-95
+- **Medium range:** C-130, An-26B
 - **Ground stations:** Comms Tower M, TV Tower, Command Center
 - **Mobile ground:** SPK-11, Patriot CR
 - **Low observable:** Smaller aircraft (worse accuracy trade-off)
@@ -52,18 +52,16 @@ Complete list of units capable of ELINT operations in Hound.
 | ----------- | ------------------------ | --------- | ------------------------------------- |
 | **C-130**   | 0.65° / 0.07°            | A         | Excellent all-around, common          |
 | **C-130J**  | 0.65° / 0.07°            | A         | DCS:C-130                             |
-| **C-17**    | 0.57° / 0.06°            | A         | Best large aircraft (RC-135 stand-in) |
-| **IL-76MD** | 0.60° / 0.06°            | A         | Russian equivalent to C-130           |
+| **KC-135**  | 0.57° / 0.06°            | A         | Best large aircraft (RC-135 stand-in) |
+| **KC-135MPRS** | 0.57° / 0.06°         | A         | Best large aircraft (RC-135 stand-in) |
 | **Tu-95**   | 0.46° / 0.05°            | A         | Excellent accuracy, large size        |
 | **Tu-142**  | 0.46° / 0.05°            | A         | Maritime patrol version of Tu-95      |
-| **An-30M**  | 0.92° / 0.10°            | A         | Good accuracy, smaller platform       |
-| **An-26B**  | 0.98° / 0.10°            | A         | Similar to An-30M                     |
+| **An-26B**  | 0.98° / 0.10°            | A         | An-26RR/RT ELINT stand-in             |
 
 ### Medium Aircraft
 
 | Platform        | C Band / H Band Accuracy | Min. Band | Notes                         |
 | --------------- | ------------------------ | --------- | ----------------------------- |
-| **C-47**        | 1.91° / 0.20°            | A         | Vintage but capable           |
 | **S-3B Viking** | 1.59° / 0.17°            | A         | Carrier-based ASW, good ELINT |
 
 ### AEW / AWACS
@@ -93,12 +91,6 @@ Complete list of units capable of ELINT operations in Hound.
 
 **Note:** Tactical aircraft have smaller antennas = lower accuracy. Best used as gap-fillers or when precision platforms unavailable.
 
-### Special Aircraft
-
-| Platform | C Band / H Band Accuracy | Min. Band | Notes                         |
-| -------- | ------------------------ | --------- | ----------------------------- |
-| **H-6J** | 6.54° / 0.70°            | C         | Chinese bomber, Fantasmagoria |
-
 ---
 
 ## Helicopters
@@ -107,13 +99,9 @@ Complete list of units capable of ELINT operations in Hound.
 
 | Platform           | C Band / H Band Accuracy | Min. Band | Notes                             |
 | ------------------ | ------------------------ | --------- | --------------------------------- |
-| **Mi-26**          | 1.15° / 0.12°            | A         | Largest helicopter, best accuracy |
-| **CH-47D Chinook** | 1.91° / 0.20°            | A         | Good for transport + ELINT        |
-| **CH-53E**         | 2.29° / 0.25°            | A         | Large cargo helo                  |
 | **UH-60A**         | 2.86° / 0.31°            | B         | Medium transport                  |
 | **SH-60B**         | 2.86° / 0.31°            | B         | Naval variant                     |
 | **Mi-8MT**         | 2.86° / 0.31°            | B         | Russian medium transport          |
-| **UH-1H Huey**     | 5.73° / 0.61°            | C         | Small, lower accuracy             |
 | **Ka-27**          | 5.73° / 0.61°            | C         | Naval helicopter                  |
 
 **Use Cases:**
@@ -203,7 +191,7 @@ Supported third-party aircraft:
 
 ### For Maximum Accuracy:
 
-1. **Primary:** 2-3 high-altitude large aircraft (C-130, C-17, IL-76)
+1. **Primary:** 2-3 high-altitude large aircraft (C-130, KC-135)
 2. **Baseline:** 1-2 static towers on high ground
 3. **Backup:** Additional platforms for redundancy
 
@@ -234,7 +222,7 @@ Supported third-party aircraft:
 ```
 - C-130 "ELINT North" - Racetrack north at 28,000 ft
 - C-130 "ELINT South" - Racetrack south at 28,000 ft
-- C-17 "ELINT East" - Racetrack east at 32,000 ft
+- KC-135 "ELINT East" - Racetrack east at 32,000 ft
 - TV Tower/Cooms Tower - On high terrain
 ```
 
