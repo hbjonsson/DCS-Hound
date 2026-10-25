@@ -3,6 +3,34 @@
 Important changes between Hound versions that may break existing missions.
 
 ---
+## Version 0.5.2-455 (455 fork)
+
+### Realistic DF on by default
+
+**Breaking Change:** `realisticDF` defaults to `true`. Contacts carry search-area uncertainty (single standoff platform: km-scale ellipses) instead of near-pinpoint fixes. Platforms only detect radars inside their receiver coverage, antenna apertures and intercept range.
+
+**Impact:**
+- Fewer and less accurate contacts from single platforms; accuracy ratings mostly "Low" / "Unactionable" until crossing geometry or TDOA is available
+- Platforms in a bank, pointing at the emitter (SIDE apertures) or outside receiver coverage produce no datapoints
+- Radars tracking another aircraft are heard on sidelobes only
+
+**Migration:** `HoundInstance:disableRealisticDF()` restores the legacy model. Details: [Realistic DF](realistic-df.md).
+
+### Platforms removed
+
+**Breaking Change:** `Cow`, `C-17A`, `CH-47D`, `CH-53E`, `MIL-26`, `UH-1H`, `IL-76MD`, `An-30M`, `C-47`, `H-6J` and the `Hercules` mod are no longer valid ELINT platforms.
+
+**Impact:** `addPlatform()` with these unit types returns `false`; the unit is not added.
+
+**Migration:** use a listed platform ([Available Platforms](platforms.md)); RC-135 class collection requires the `RC135RJ` mod.
+
+### Platform data
+
+**Breaking Change:** antenna sizes follow airframe dimensions (E-3A 46.6 m, E-2C/D 24.6 m, A-50 50.5 m, RC-135 41.5 m, ...); `antenna.factor` is 1 for all aircraft. Platform entries carry `df`, `rx`, `ap` and optional `tdoa` fields.
+
+**Impact:** legacy-mode accuracy values change; custom `HOUND.DB.Platform` entries without `df` / `rx` use AMPLITUDE class with no frequency gate and omnidirectional coverage.
+
+---
 ## Version 0.5.x
 
 ### From 0.5.0 to 0.5.1

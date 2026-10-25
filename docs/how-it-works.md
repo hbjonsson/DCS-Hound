@@ -262,7 +262,9 @@ HoundInstance:enablePlatformPosErrors()
 
 ---
 
-## Realistic DF (Opt-in)
+## Realistic DF
+
+Full reference, results and sources: [Realistic DF](realistic-df.md).
 
 ```lua
 HoundInstance:enableRealisticDF()

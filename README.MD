@@ -63,6 +63,7 @@ end
 | --------------------------------------------------- | -------------------------------------------------------------- |
 | **[Available Platforms](docs/platforms.md)** | Complete list of supported ELINT assets and their capabilities |
 | **[How Hound Works](docs/how-it-works.md)**  | Understanding triangulation, accuracy, and system behavior     |
+| **[Realistic DF](docs/realistic-df.md)**     | 455 DF error model: bias, intercept, apertures, TDOA/FDOA, results |
 | **[Map Markers](docs/map-markers.md)**       | Visual feedback, marker types, and customization               |
 
 ### Communication Systems

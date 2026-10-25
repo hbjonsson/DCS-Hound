@@ -186,7 +186,7 @@ Supported third-party aircraft:
 
 ## Realistic DF Data
 
-Used when `enableRealisticDF()` is on ([How It Works: Realistic DF](how-it-works.md#realistic-df-opt-in)). Accuracy columns above are legacy-mode values (wavelength / antenna size only).
+Used when `enableRealisticDF()` is on ([How It Works: Realistic DF](how-it-works.md#realistic-df)). Accuracy columns above are legacy-mode values (wavelength / antenna size only).
 
 **Antenna size rule:** fuselage-side arrays: fuselage length; wingtip / quadrant systems: wingspan; pods: pod length; other entries notional.
 

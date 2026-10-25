@@ -10,7 +10,7 @@ This subtree owns all hand-written documentation (`.md` files), generated HTML d
 
 ## Local Contracts
 
-- **Source of truth**: Hand-written markdown files in `docs/` root (24 files). These are maintained by the developer.
+- **Source of truth**: Hand-written markdown files in `docs/` root (25 files). These are maintained by the developer.
 - **Generated docs**: `docs/web/` (public API HTML) and `docs/web/dev/` (developer API HTML) are built by LDoc via `config_general.ld` and `config_developer.ld`. Do not hand-edit generated files.
 - **Reproducible builds**: Run `generate_docs.sh` (from `tools/`) to regenerate HTML docs from `src/` LDoc annotations.
 - **Publishing**: `.github/workflows/deploy-pages.yml` deploys `docs/web/` to GitHub Pages on push to `main` that touches `docs/web/**`.

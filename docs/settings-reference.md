@@ -138,7 +138,7 @@ HoundInstance:enableRealisticDF()
 HoundInstance:disableRealisticDF()
 ```
 
-📖 [How It Works: Realistic DF](how-it-works.md#realistic-df-opt-in)
+📖 [How It Works: Realistic DF](how-it-works.md#realistic-df)
 
 📖 [Platforms Guide](platforms.md)
 

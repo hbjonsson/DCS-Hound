@@ -13,6 +13,7 @@
 - [Installation](docs/installation.md): Detailed installation and requirements.
 - [Basic Configuration](docs/basic-configuration.md): Essential settings and examples.
 - [Available Platforms](docs/platforms.md): Supported ELINT assets and capabilities.
+- [Realistic DF](docs/realistic-df.md): DF error model, intercept, apertures, TDOA/FDOA, Monte Carlo results.
 - [Controller Setup](docs/controller.md): Interactive SAM controller with voice and text.
 - [ATIS Setup](docs/atis.md): Automated threat broadcasts.
 - [TTS Configuration](docs/tts-configuration.md): Text-to-speech voice setup.
